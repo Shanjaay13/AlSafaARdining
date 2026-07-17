@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Coursework, Proposals, and Documentation Scripts
+/BMD12083 Introduction to Multimedia Technology_Assignment 3.pdf
+/Reflection.docx
+/Reflection.md
+/Task_1_Proposal.pptx
+/Task_2_Design_Journal.pptx
+/generate_docs.py
+/generate_slides.py
+
