@@ -390,18 +390,21 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Stack(
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: _hasDedicatedImage(item['id'])
-                        ? Image.asset(
-                            item['imagePath'],
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return PremiumFoodVisual(item: item, size: double.infinity);
-                            },
-                          )
-                        : PremiumFoodVisual(item: item, size: double.infinity),
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: _hasDedicatedImage(item['id'])
+                          ? Image.asset(
+                              item['imagePath'],
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return PremiumFoodVisual(item: item, size: double.infinity);
+                              },
+                            )
+                          : PremiumFoodVisual(item: item, size: double.infinity),
+                    ),
                   ),
                   Positioned(
                     top: 8,
