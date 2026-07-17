@@ -4,6 +4,7 @@
 class MenuData {
   static const List<Map<String, dynamic>> items = [
 
+
     {
       'id': 'roti_kosong_roti_canai',
       'name': 'Roti Kosong (Roti Canai)',
@@ -93,6 +94,16 @@ class MenuData {
       'tags': ['LOCAL FAVORITE'],
       'description': "Toasted bread with kaya (coconut jam) & butter",
       'calories': '350 Kcal',
+    },
+    {
+      'id': 'roti_pisang',
+      'name': 'Roti Pisang',
+      'price': 4.5,
+      'imagePath': 'assets/roti_pisang.png',
+      'category': 'Roti / Flatbreads',
+      'tags': ['SWEET'],
+      'description': "Roti with sliced bananas & condensed milk",
+      'calories': '300 Kcal',
     },
     {
       'id': 'nasi_goreng_ayam',
@@ -192,16 +203,6 @@ class MenuData {
       'category': 'Mee / Noodles',
       'tags': ['LOCAL FAVORITE'],
       'description': "Fried noodles with chicken",
-      'calories': '620 Kcal',
-    },
-    {
-      'id': 'mee_goreng_mamak_ayam',
-      'name': 'Mee Goreng Mamak Ayam',
-      'price': 11.05,
-      'imagePath': 'assets/mee_goreng.png',
-      'category': 'Mee / Noodles',
-      'tags': ['LOCAL FAVORITE'],
-      'description': "Mamak-style fried noodles with chicken",
       'calories': '620 Kcal',
     },
     {
@@ -325,16 +326,6 @@ class MenuData {
       'calories': '300 Kcal',
     },
     {
-      'id': 'roti_pisang',
-      'name': 'Roti Pisang',
-      'price': 4.5,
-      'imagePath': 'assets/roti_pisang.png',
-      'category': 'Other / Snacks',
-      'tags': ['SWEET'],
-      'description': "Roti with sliced bananas & condensed milk",
-      'calories': '300 Kcal',
-    },
-    {
       'id': 'teh_o',
       'name': 'Teh O',
       'price': 1.95,
@@ -382,16 +373,6 @@ class MenuData {
       'category': 'Hot Drinks',
       'tags': ['LOCAL FAVORITE'],
       'description': "Tea with evaporated milk",
-      'calories': '220 Kcal',
-    },
-    {
-      'id': 'kopi_susu',
-      'name': 'Kopi Susu',
-      'price': 3.9,
-      'imagePath': 'assets/kopi_susu.png',
-      'category': 'Hot Drinks',
-      'tags': ['SWEET'],
-      'description': "Coffee with condensed milk",
       'calories': '220 Kcal',
     },
     {
