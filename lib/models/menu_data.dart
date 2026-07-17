@@ -189,7 +189,7 @@ class MenuData {
       'id': 'maggi_goreng',
       'name': 'Maggi Goreng',
       'price': 5.0,
-      'imagePath': 'assets/mee_goreng.png',
+      'imagePath': 'assets/maggi_goreng.png',
       'category': 'Mee / Noodles',
       'tags': ['SPICY', 'WITH EGG'],
       'description': "Stir-fried instant noodles with veg, egg & sambal",
