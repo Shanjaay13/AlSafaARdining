@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:camera/camera.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/premium_food_visual.dart';
 import 'order_confirmed_page.dart';
@@ -30,6 +31,12 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   String _gravyStyle = 'Normal';
   String _activeCallout = '';
 
+  // Camera States
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  bool _isLiveCamera = false;
+  bool _isCameraLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +50,81 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       _spicyLevel = opts['spicy'] ?? 'Medium';
       _gravyStyle = opts['gravy'] ?? 'Normal';
     }
+  }
+
+  Future<void> _toggleCamera() async {
+    if (_isLiveCamera) {
+      setState(() {
+        _isLiveCamera = false;
+      });
+      return;
+    }
+
+    if (_isCameraInitialized) {
+      setState(() {
+        _isLiveCamera = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isCameraLoading = true;
+    });
+
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        _showCameraError('No cameras found on this device.');
+        return;
+      }
+
+      CameraDescription? targetCamera;
+      for (var camera in cameras) {
+        if (camera.lensDirection == CameraLensDirection.back) {
+          targetCamera = camera;
+          break;
+        }
+      }
+      targetCamera ??= cameras.first;
+
+      _cameraController = CameraController(
+        targetCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _isLiveCamera = true;
+          _isCameraLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCameraLoading = false;
+        });
+      }
+      _showCameraError('Could not access camera: $e');
+    }
+  }
+
+  void _showCameraError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -60,19 +142,92 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       backgroundColor: const Color(0xFF121412),
       body: Stack(
         children: [
-          // 1. Simulated Camera View (Background)
+          // 1. Simulated / Live Camera View (Background)
           Positioned.fill(
-            child: Image.asset(
-              'assets/restaurant_bg.png',
-              fit: BoxFit.cover,
-            ),
+            child: _isLiveCamera && _isCameraInitialized && _cameraController != null
+                ? Container(
+                    color: Colors.black,
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _cameraController!.value.previewSize?.height ?? 1080,
+                        height: _cameraController!.value.previewSize?.width ?? 1920,
+                        child: CameraPreview(_cameraController!),
+                      ),
+                    ),
+                  )
+                : Image.asset(
+                    'assets/restaurant_bg.png',
+                    fit: BoxFit.cover,
+                  ),
           ),
           
+          // Camera Loading Indicator Overlay
+          if (_isCameraLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4A24C)),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Initializing camera...',
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          
+          // Flashing LIVE AR camera tracking indicator
+          if (_isLiveCamera && _isCameraInitialized)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 70,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.greenAccent),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.greenAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'LIVE CAMERA AR',
+                      style: TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Subtle camera grid/scanlines overlay to enhance AR realism
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.35),
+                color: Colors.black.withOpacity(_isLiveCamera ? 0.15 : 0.35),
               ),
               child: CustomPaint(
                 painter: ArScanOverlayPainter(),
@@ -160,16 +315,29 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.info_outline, color: Colors.white),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Pinch to scale, drag to position or rotate in AR.'),
-                        backgroundColor: Color(0xFF142A22),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _isLiveCamera ? Icons.videocam : Icons.videocam_off,
+                        color: _isLiveCamera ? const Color(0xFFD4A24C) : Colors.white,
                       ),
-                    );
-                  },
+                      tooltip: _isLiveCamera ? 'Switch to Simulated View' : 'Switch to Live AR Camera',
+                      onPressed: _toggleCamera,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.info_outline, color: Colors.white),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Pinch to scale, drag to position or rotate in AR.'),
+                            backgroundColor: Color(0xFF142A22),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
