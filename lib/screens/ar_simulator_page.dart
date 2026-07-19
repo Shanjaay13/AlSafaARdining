@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/premium_food_visual.dart';
 import 'order_confirmed_page.dart';
@@ -20,6 +21,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   double _scale = 1.0;
   double _rotationAngle = 0.0;
   bool _showIngredients = false;
+  bool _is3dMode = true;
 
   // Customization States (preloaded from detail page)
   double _iceLevel = 0.5;
@@ -36,6 +38,16 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   bool _isCameraInitialized = false;
   bool _isLiveCamera = false;
   bool _isCameraLoading = false;
+
+  String _getModelPath(String itemId, String category) {
+    if (category.contains('Drink')) {
+      return 'https://github.com/KhronosGroup/glTF-Sample-Assets/raw/main/Models/Teacup/glTF-Binary/Teacup.glb';
+    } else if (itemId.contains('avocado')) {
+      return 'https://github.com/KhronosGroup/glTF-Sample-Assets/raw/main/Models/Avocado/glTF-Binary/Avocado.glb';
+    } else {
+      return 'assets/food_base.glb';
+    }
+  }
 
   @override
   void initState() {
@@ -237,40 +249,55 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
 
           // 2. Interactive Food Model (Centered in the viewport)
           Center(
-            child: GestureDetector(
-              onScaleUpdate: (details) {
-                setState(() {
-                  _scale = details.scale.clamp(0.6, 1.8);
-                  _rotationAngle = details.rotation;
-                });
-              },
-              child: Transform.rotate(
-                angle: _rotationAngle,
-                child: Transform.scale(
-                  scale: _scale,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Food Image with interactive styling based on custom sliders
-                      _buildFoodVisual(itemId, category),
+            child: _is3dMode
+                ? Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height * 0.65,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ModelViewer(
+                      src: _getModelPath(itemId, category),
+                      alt: widget.item['name'],
+                      ar: true,
+                      arModes: const ['webxr', 'scene-viewer', 'quick-look'],
+                      autoRotate: true,
+                      cameraControls: true,
+                      disableZoom: false,
+                    ),
+                  )
+                : GestureDetector(
+                    onScaleUpdate: (details) {
+                      setState(() {
+                        _scale = details.scale.clamp(0.6, 1.8);
+                        _rotationAngle = details.rotation;
+                      });
+                    },
+                    child: Transform.rotate(
+                      angle: _rotationAngle,
+                      child: Transform.scale(
+                        scale: _scale,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Food Image with interactive styling based on custom sliders
+                            _buildFoodVisual(itemId, category),
 
-                      // Interactive Callout Pins (only for Nasi Lemak AR)
-                      if (itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') ..._buildNasiLemakCallouts(),
-                    ],
+                            // Interactive Callout Pins (only for Nasi Lemak AR)
+                            if (itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') ..._buildNasiLemakCallouts(),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
 
           // 3. Floating Sidebar Panel (Nutrition/Ingredients for solid items)
-          if (!isDrink) _buildNutritionSidebar(itemId),
+          if (!isDrink && !_is3dMode) _buildNutritionSidebar(itemId),
 
           // 4. Custom Drink / Food Customizer Sliders
-          _buildCustomizerDock(category),
+          if (!_is3dMode) _buildCustomizerDock(category),
 
           // 5. Nasi Lemak Callout Overlay Details
-          if ((itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') && _activeCallout.isNotEmpty)
+          if (!_is3dMode && (itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') && _activeCallout.isNotEmpty)
             _buildCalloutDetailOverlay(),
 
           // 6. Header Overlays
@@ -302,10 +329,10 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.view_in_ar, color: Color(0xFFD4A24C), size: 16),
+                      Icon(_is3dMode ? Icons.threed_rotation : Icons.view_in_ar, color: const Color(0xFFD4A24C), size: 16),
                       const SizedBox(width: 6),
                       Text(
-                        '${widget.item['name']} AR',
+                        _is3dMode ? '${widget.item['name']} 3D' : '${widget.item['name']} AR',
                         style: const TextStyle(
                           color: Color(0xFFD4A24C),
                           fontWeight: FontWeight.bold,
@@ -318,6 +345,19 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Mode Toggle Button (3D vs 2D)
+                    IconButton(
+                      icon: Icon(
+                        _is3dMode ? Icons.tune : Icons.threed_rotation,
+                        color: Colors.white,
+                      ),
+                      tooltip: _is3dMode ? 'Switch to 2D Customizer' : 'Switch to 3D Viewer',
+                      onPressed: () {
+                        setState(() {
+                          _is3dMode = !_is3dMode;
+                        });
+                      },
+                    ),
                     IconButton(
                       icon: Icon(
                         _isLiveCamera ? Icons.videocam : Icons.videocam_off,
@@ -978,14 +1018,14 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
           const Text('Zoom', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
           Expanded(
             child: Slider(
-              value: _scale,
+              value: _scale.clamp(0.6, 1.8),
               min: 0.6,
               max: 1.8,
               activeColor: const Color(0xFFD4A24C),
               inactiveColor: Colors.white12,
               onChanged: (val) {
                 setState(() {
-                  _scale = val;
+                  _scale = val.clamp(0.6, 1.8);
                 });
               },
             ),
