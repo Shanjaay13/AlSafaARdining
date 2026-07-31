@@ -89,6 +89,7 @@ class _HomePageState extends State<HomePage> {
             ],
           )
         ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFFD4A24C),
         icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF121412)),

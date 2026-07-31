@@ -712,7 +712,6 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       ),
     );
   }
-  }
 
   Widget _buildIceOverlay() {
     if (_iceLevel <= 0.2) return const SizedBox.shrink();
