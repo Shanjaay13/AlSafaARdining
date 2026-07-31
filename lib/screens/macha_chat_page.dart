@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/groq_service.dart';
 import '../providers/cart_provider.dart';
 import '../models/menu_data.dart';
@@ -12,22 +13,72 @@ class MachaChatPage extends StatefulWidget {
   State<MachaChatPage> createState() => _MachaChatPageState();
 }
 
-class _MachaChatPageState extends State<MachaChatPage> {
+class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
+  
+  late stt.SpeechToText _speech;
+  late AnimationController _pulseController;
+  
   bool _isLoading = false;
   bool _isListening = false;
+  bool _speechInitialized = false;
+  String _recognizedWords = '';
+  String _speechStatus = '';
 
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
+    _initSpeech();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
     // Initial welcome message from Macha
     _messages.add({
       'sender': 'macha',
-      'text': "Ayo boss! Welcome to Al Safa! AI Macha here ready to write order, recommend dishes, or just chat lah. Tell me what you want to eat, boss!",
+      'text': "Ayo boss! Welcome to Al Safa! AI Macha here ready to write order, recommend dishes, or just chat lah. Tap the mic button to speak your order, boss!",
       'time': DateTime.now(),
     });
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      bool available = await _speech.initialize(
+        onStatus: (status) {
+          setState(() {
+            _speechStatus = status;
+            if (status == 'done' || status == 'notListening') {
+              _isListening = false;
+            }
+          });
+        },
+        onError: (errorNotification) {
+          setState(() {
+            _speechStatus = 'Error: ${errorNotification.errorMsg}';
+            _isListening = false;
+          });
+        },
+      );
+      setState(() {
+        _speechInitialized = available;
+      });
+    } catch (e) {
+      debugPrint('Speech initialization error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _speech.stop();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -49,6 +100,9 @@ class _MachaChatPageState extends State<MachaChatPage> {
     if (customText == null) {
       _messageController.clear();
     }
+    setState(() {
+      _recognizedWords = '';
+    });
 
     setState(() {
       _messages.add({
@@ -62,6 +116,8 @@ class _MachaChatPageState extends State<MachaChatPage> {
 
     // Call GroqService
     final response = await GroqService.sendMessage(text);
+
+    if (!mounted) return;
 
     setState(() {
       _isLoading = false;
@@ -82,7 +138,6 @@ class _MachaChatPageState extends State<MachaChatPage> {
         final quantity = rawItem['quantity'] ?? 1;
         final notes = rawItem['notes'];
 
-        // Find the item details from menu database
         final menuMatch = MenuData.items.firstWhere(
           (m) => m['id'] == id,
           orElse: () => <String, dynamic>{},
@@ -112,7 +167,201 @@ class _MachaChatPageState extends State<MachaChatPage> {
     _scrollToBottom();
   }
 
-  // Option 2: Interactive Speech & Dictation Input
+  // Toggle real voice recognition
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      setState(() {
+        _isListening = false;
+      });
+      if (_recognizedWords.trim().isNotEmpty) {
+        _handleSendMessage(customText: _recognizedWords);
+      }
+    } else {
+      if (!_speechInitialized) {
+        await _initSpeech();
+      }
+
+      if (!_speechInitialized) {
+        // Fallback voice dictation dialog if native speech module is uninitialized on device
+        _showVoiceInputDialog();
+        return;
+      }
+
+      setState(() {
+        _isListening = true;
+        _recognizedWords = '';
+      });
+
+      _speech.listen(
+        onResult: (result) {
+          setState(() {
+            _recognizedWords = result.recognizedWords;
+            _messageController.text = result.recognizedWords;
+          });
+        },
+        listenFor: const Duration(seconds: 20),
+        pauseFor: const Duration(seconds: 4),
+        cancelOnError: true,
+        partialResults: true,
+      );
+
+      _showLiveVoiceListeningSheet();
+    }
+  }
+
+  // Live voice listening bottom sheet dialog with waveform and real-time words display
+  void _showLiveVoiceListeningSheet() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFF142A22),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(color: Color(0xFFD4A24C), blurRadius: 16, spreadRadius: -4),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Animated Pulsing Mic Icon
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return Container(
+                        padding: EdgeInsets.all(16 + (_pulseController.value * 8)),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4A24C).withOpacity(0.2 + (_pulseController.value * 0.3)),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mic, color: Color(0xFFD4A24C), size: 40),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'LISTENING TO YOUR VOICE...',
+                    style: TextStyle(
+                      color: Color(0xFFD4A24C),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _recognizedWords.isEmpty
+                        ? 'Speak your order now (e.g. "Satu roti telur dan milo ais")...'
+                        : '"$_recognizedWords"',
+                    style: TextStyle(
+                      color: _recognizedWords.isEmpty ? Colors.white54 : Colors.white,
+                      fontSize: 15,
+                      fontWeight: _recognizedWords.isEmpty ? FontWeight.normal : FontWeight.bold,
+                      fontStyle: _recognizedWords.isEmpty ? FontStyle.italic : FontStyle.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Quick Sample Voice Chips for immediate voice simulation
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      "Bagi 1 roti telur & milo ais kurang manis",
+                      "One nasi goreng ayam extra pedas",
+                      "1 Teh tarik hot & roti kosong",
+                    ].map((sample) {
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _speech.stop();
+                          setState(() {
+                            _isListening = false;
+                          });
+                          _handleSendMessage(customText: sample);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4A24C).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            '"$sample"',
+                            style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 11, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white38),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () {
+                            _speech.stop();
+                            setState(() {
+                              _isListening = false;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: const Text('CANCEL', style: TextStyle(color: Colors.white70)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD4A24C),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _speech.stop();
+                            setState(() {
+                              _isListening = false;
+                            });
+                            if (_recognizedWords.trim().isNotEmpty) {
+                              _handleSendMessage(customText: _recognizedWords);
+                            }
+                          },
+                          child: const Text(
+                            'SEND ORDER',
+                            style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Backup dictation dialog
   void _showVoiceInputDialog() {
     final TextEditingController voiceTextController = TextEditingController();
 
@@ -145,7 +394,7 @@ class _MachaChatPageState extends State<MachaChatPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'SPEAK / DICTATE TO MACHA',
+                'VOICE ORDER DICTATION',
                 style: TextStyle(
                   color: Color(0xFFD4A24C),
                   fontSize: 16,
@@ -155,7 +404,7 @@ class _MachaChatPageState extends State<MachaChatPage> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Dictate your order naturally (e.g. "Bagi saya 2 roti telur dan 1 teh tarik")',
+                'Dictate or tap a sample order below to test AI Macha',
                 style: TextStyle(color: Colors.white60, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
@@ -219,30 +468,31 @@ class _MachaChatPageState extends State<MachaChatPage> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('CANCEL', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text('CANCEL', style: TextStyle(color: Colors.white70)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD4A24C),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      icon: const Icon(Icons.send, color: Color(0xFF121412), size: 16),
-                      label: const Text('SEND ORDER', style: TextStyle(color: Color(0xFF121412), fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
-                        final spokenText = voiceTextController.text.trim();
                         Navigator.pop(context);
-                        if (spokenText.isNotEmpty) {
-                          _handleSendMessage(customText: spokenText);
+                        if (voiceTextController.text.trim().isNotEmpty) {
+                          _handleSendMessage(customText: voiceTextController.text.trim());
                         }
                       },
+                      child: const Text(
+                        'SEND ORDER',
+                        style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         );
@@ -255,8 +505,12 @@ class _MachaChatPageState extends State<MachaChatPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF121412),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF061C14),
+        backgroundColor: const Color(0xFF0F2A1D),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4A24C)),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             Container(
@@ -265,39 +519,32 @@ class _MachaChatPageState extends State<MachaChatPage> {
                 color: Color(0xFFD4A24C),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.support_agent, color: Color(0xFF121412), size: 20),
+              child: const Icon(Icons.face, color: Color(0xFF0F2A1D), size: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'AI MACHA',
+              children: const [
+                Text(
+                  'AI Macha Waiter',
                   style: TextStyle(
                     color: Colors.white,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    letterSpacing: 1.0,
                   ),
                 ),
                 Text(
-                  _isLoading ? 'Macha typing...' : 'Mamak Waiter Online',
-                  style: TextStyle(
-                    color: _isLoading ? const Color(0xFFD4A24C) : Colors.white54,
-                    fontSize: 10,
-                  ),
+                  'Online • Groq AI Order Assistant',
+                  style: TextStyle(color: Color(0xFFD4A24C), fontSize: 11),
                 ),
               ],
             ),
           ],
         ),
-        actions: const [],
       ),
       body: Column(
         children: [
-          // API Key configuration panel removed as it is now securely integrated in the backend.
-
-          // Message history list
+          // Message Trajectory Area
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -305,57 +552,52 @@ class _MachaChatPageState extends State<MachaChatPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                final isMacha = msg['sender'] == 'macha';
+                final isUser = msg['sender'] == 'user';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
-                  alignment: isMacha ? Alignment.centerLeft : Alignment.centerRight,
                   child: Row(
-                    mainAxisAlignment: isMacha ? MainAxisAlignment.start : MainAxisAlignment.end,
+                    mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (isMacha) ...[
-                        Container(
-                          margin: const EdgeInsets.only(right: 8, top: 4),
-                          width: 28,
-                          height: 28,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1B3D2F),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.restaurant_menu, color: Color(0xFFD4A24C), size: 14),
-                          ),
+                      if (!isUser) ...[
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: const Color(0xFFD4A24C),
+                          child: const Icon(Icons.face, color: Color(0xFF0F2A1D), size: 18),
                         ),
+                        const SizedBox(width: 8),
                       ],
                       Flexible(
                         child: Column(
-                          crossAxisAlignment: isMacha ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: isMacha ? const Color(0xFF1A2A22) : const Color(0xFFD4A24C),
+                                color: isUser ? const Color(0xFFD4A24C) : const Color(0xFF142A22),
                                 borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(16),
-                                  topRight: const Radius.circular(16),
-                                  bottomLeft: isMacha ? const Radius.circular(0) : const Radius.circular(16),
-                                  bottomRight: isMacha ? const Radius.circular(16) : const Radius.circular(0),
+                                  topLeft: const Radius.circular(18),
+                                  topRight: const Radius.circular(18),
+                                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                                  bottomRight: Radius.circular(isUser ? 4 : 18),
                                 ),
-                                border: isMacha ? Border.all(color: const Color(0xFFD4A24C).withOpacity(0.15)) : null,
+                                border: Border.all(
+                                  color: isUser ? const Color(0xFFD4A24C) : const Color(0xFFD4A24C).withOpacity(0.2),
+                                ),
                               ),
                               child: Text(
                                 msg['text'],
                                 style: TextStyle(
-                                  color: isMacha ? Colors.white : const Color(0xFF121412),
-                                  fontSize: 13.5,
-                                  height: 1.3,
+                                  color: isUser ? const Color(0xFF121412) : Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: isUser ? FontWeight.bold : FontWeight.normal,
                                 ),
                               ),
                             ),
 
-                            // Render recommendation cards if available
-                            if (isMacha && msg['items'] != null && msg['items'].isNotEmpty) ...[
+                            // If AI Macha recommends or adds items to cart, render item cards directly in chat
+                            if (!isUser && msg['items'] != null && (msg['items'] as List).isNotEmpty) ...[
                               const SizedBox(height: 8),
                               _buildRecommendationCardList(msg['items']),
                             ]
@@ -375,50 +617,74 @@ class _MachaChatPageState extends State<MachaChatPage> {
               child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Color(0xFFD4A24C), strokeWidth: 2))),
             ),
 
-          // Listening overlay
+          // Real Voice Listening Bar Overlay
           if (_isListening)
             Container(
-              color: Colors.black.withOpacity(0.8),
-              padding: const EdgeInsets.all(24),
+              color: Colors.black.withOpacity(0.85),
+              padding: const EdgeInsets.all(16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.mic, color: Color(0xFFD4A24C), size: 24),
-                  const SizedBox(width: 16),
-                  const Text(
-                    'Listening (Simulating voice match)...',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _recognizedWords.isEmpty ? 'Listening to your voice...' : '"$_recognizedWords"',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
-                  _buildAnimatedWaveform(),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4A24C),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    onPressed: _toggleListening,
+                    child: const Text('SEND', style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
                 ],
               ),
             ),
 
-          // Input control bar
+          // Input control bar with glowing Mic Voice trigger
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             color: const Color(0xFF061C14),
             child: Row(
               children: [
-                // Simulated voice recognition trigger
+                // Real Voice Recognition Button (Pulsing Gold)
                 GestureDetector(
-                  onTap: _showVoiceInputDialog,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _isListening ? const Color(0xFFD4A24C) : const Color(0xFF121412),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
-                    ),
-                    child: Icon(
-                      Icons.mic,
-                      color: _isListening ? const Color(0xFF121412) : const Color(0xFFD4A24C),
-                      size: 20,
-                    ),
+                  onTap: _toggleListening,
+                  child: AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _isListening ? const Color(0xFFD4A24C) : const Color(0xFF142A22),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFD4A24C).withOpacity(_isListening ? 1.0 : 0.6),
+                            width: _isListening ? 2.5 : 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFD4A24C).withOpacity(0.3 + (_pulseController.value * 0.3)),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _isListening ? Icons.mic : Icons.mic_none,
+                          color: _isListening ? const Color(0xFF121412) : const Color(0xFFD4A24C),
+                          size: 22,
+                        ),
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
 
                 // Text field input
                 Expanded(
@@ -426,13 +692,13 @@ class _MachaChatPageState extends State<MachaChatPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF121412),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.15)),
+                      border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.2)),
                     ),
                     child: TextField(
                       controller: _messageController,
                       style: const TextStyle(color: Colors.white, fontSize: 13.5),
                       decoration: const InputDecoration(
-                        hintText: 'Type order or ask Macha...',
+                        hintText: 'Speak (mic) or type order...',
                         hintStyle: TextStyle(color: Colors.white30),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -443,10 +709,17 @@ class _MachaChatPageState extends State<MachaChatPage> {
                 ),
                 const SizedBox(width: 8),
 
-                // Send button
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFFD4A24C)),
-                  onPressed: () => _handleSendMessage(),
+                // Send Button
+                GestureDetector(
+                  onTap: () => _handleSendMessage(),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD4A24C),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send, color: Color(0xFF121412), size: 18),
+                  ),
                 ),
               ],
             ),
@@ -457,106 +730,73 @@ class _MachaChatPageState extends State<MachaChatPage> {
   }
 
   Widget _buildRecommendationCardList(List<dynamic> items) {
-    final cart = Provider.of<CartProvider>(context, listen: false);
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(top: 4),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        itemBuilder: (context, idx) {
+          final item = items[idx];
+          final String id = item['id'] ?? '';
+          final menuMatch = MenuData.items.firstWhere(
+            (m) => m['id'] == id,
+            orElse: () => <String, dynamic>{},
+          );
 
-    return Column(
-      children: items.map((rawItem) {
-        final id = rawItem['id'];
-        final menuMatch = MenuData.items.firstWhere(
-          (m) => m['id'] == id,
-          orElse: () => <String, dynamic>{},
-        );
+          if (menuMatch.isEmpty) return const SizedBox();
 
-        if (menuMatch.isEmpty) return const SizedBox.shrink();
-
-        return Container(
-          width: 220,
-          margin: const EdgeInsets.only(top: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1D1B),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  menuMatch['imagePath'],
-                  width: double.infinity,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(color: Colors.white10, height: 100),
+          return Container(
+            width: 200,
+            margin: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F2A1D),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    menuMatch['imagePath'],
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      menuMatch['name'],
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'RM ${menuMatch['price'].toStringAsFixed(2)}',
-                      style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 32,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4A24C),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: EdgeInsets.zero,
-                        ),
-                        onPressed: () {
-                          cart.addItem(
-                            id: id,
-                            name: menuMatch['name'],
-                            price: menuMatch['price'],
-                            imagePath: menuMatch['imagePath'],
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Added ${menuMatch['name']} to shopping bag!'),
-                              backgroundColor: const Color(0xFF0F2A1D),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'ADD TO BAG',
-                          style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 10),
-                        ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        menuMatch['name'],
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      Text(
+                        'RM ${(menuMatch['price'] as double).toStringAsFixed(2)}',
+                        style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      if (item['notes'] != null && item['notes'].toString().isNotEmpty)
+                        Text(
+                          item['notes'],
+                          style: const TextStyle(color: Colors.white54, fontSize: 9.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildAnimatedWaveform() {
-    return Row(
-      children: List.generate(4, (i) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          width: 3,
-          height: 15.0 + (i * 5),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD4A24C),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        );
-      }),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
