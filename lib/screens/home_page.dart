@@ -359,7 +359,7 @@ class _HomePageState extends State<HomePage> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: const [
+                  children: [
                     _FeatureChip(icon: Icons.view_in_ar, label: '3D AR View'),
                     _FeatureChip(icon: Icons.mic, label: 'AI Voice Waiter'),
                     _FeatureChip(icon: Icons.tune, label: 'Live Customizer'),
@@ -575,5 +575,32 @@ class _HomePageState extends State<HomePage> {
 
   bool _hasDedicatedImage(String id) {
     return true;
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _FeatureChip({Key? key, required this.icon, required this.label}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F2A1D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFFD4A24C), size: 12),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
   }
 }
