@@ -32,6 +32,19 @@ class _DetailPageState extends State<DetailPage> {
     final tags = widget.item['tags'] as List<String>;
     final category = widget.item['category'];
 
+    final double basePrice = _selectedPortion == 'Standard' 
+        ? widget.item['price'] 
+        : widget.item['price'] + 8.0;
+    
+    double extraCharges = 0.0;
+    if (category == 'Roti / Flatbreads') {
+      if (_addEgg) extraCharges += 1.50;
+      if (_addCheese) extraCharges += 2.00;
+      if (_extraMilk) extraCharges += 1.00;
+    }
+    
+    final currentTotalPrice = basePrice + extraCharges;
+
     return Scaffold(
       backgroundColor: const Color(0xFF121412),
       body: Stack(
@@ -178,7 +191,7 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                         ),
                         Text(
-                          'RM ${widget.item['price'].toStringAsFixed(2)}',
+                          'RM ${currentTotalPrice.toStringAsFixed(2)}',
                           style: const TextStyle(
                             color: Color(0xFFD4A24C),
                             fontSize: 24,
@@ -278,10 +291,6 @@ class _DetailPageState extends State<DetailPage> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      final itemPrice = _selectedPortion == 'Standard' 
-                          ? widget.item['price'] 
-                          : widget.item['price'] + 8.0;
-                      
                       // Compile customizable order note
                       String note = '';
                       if (category == 'Hot Drinks' || category == 'Cold Drinks' || category == 'Specialty Drinks') {
@@ -305,7 +314,7 @@ class _DetailPageState extends State<DetailPage> {
                       cart.addItem(
                         id: widget.item['id'],
                         name: widget.item['name'],
-                        price: itemPrice,
+                        price: currentTotalPrice,
                         imagePath: widget.item['imagePath'],
                         portionSize: _selectedPortion,
                         notes: note.isNotEmpty ? note : null,
@@ -358,6 +367,8 @@ class _DetailPageState extends State<DetailPage> {
                         MaterialPageRoute(
                           builder: (context) => ArSimulatorPage(item: {
                             ...widget.item,
+                            'basePrice': basePrice,
+                            'portionSize': _selectedPortion,
                             'custom_options': {
                               'sweetness': _sweetnessLevel,
                               'ice': _iceLevel,
@@ -537,29 +548,29 @@ class _DetailPageState extends State<DetailPage> {
             style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0),
           ),
           const SizedBox(height: 12),
-          CheckboxListTile(
-            title: const Text('Add Fried Egg inside (Telur)', style: TextStyle(color: Colors.white, fontSize: 13)),
+          _buildAddonCard(
+            title: 'Fried Egg (Telur)',
+            subtitle: 'Classic sunny-side-up egg cooked inside',
+            priceTag: '+RM 1.50',
+            imagePath: 'assets/addons/fried_egg.png',
             value: _addEgg,
-            activeColor: const Color(0xFFD4A24C),
-            checkColor: const Color(0xFF121412),
             onChanged: (val) => setState(() => _addEgg = val ?? false),
-            contentPadding: EdgeInsets.zero,
           ),
-          CheckboxListTile(
-            title: const Text('Add Melted Cheese (Keju)', style: TextStyle(color: Colors.white, fontSize: 13)),
+          _buildAddonCard(
+            title: 'Melted Cheese (Keju)',
+            subtitle: 'Rich mozzarella & cheddar cheese pulls',
+            priceTag: '+RM 2.00',
+            imagePath: 'assets/addons/melted_cheese.png',
             value: _addCheese,
-            activeColor: const Color(0xFFD4A24C),
-            checkColor: const Color(0xFF121412),
             onChanged: (val) => setState(() => _addCheese = val ?? false),
-            contentPadding: EdgeInsets.zero,
           ),
-          CheckboxListTile(
-            title: const Text('Extra Condensed Milk (Susu Pekat)', style: TextStyle(color: Colors.white, fontSize: 13)),
+          _buildAddonCard(
+            title: 'Extra Condensed Milk (Susu)',
+            subtitle: 'Drizzles of sweet, creamy condensed milk',
+            priceTag: '+RM 1.00',
+            imagePath: 'assets/addons/condensed_milk.png',
             value: _extraMilk,
-            activeColor: const Color(0xFFD4A24C),
-            checkColor: const Color(0xFF121412),
             onChanged: (val) => setState(() => _extraMilk = val ?? false),
-            contentPadding: EdgeInsets.zero,
           ),
         ],
       );
@@ -671,6 +682,103 @@ class _DetailPageState extends State<DetailPage> {
       default:
         return Icons.local_dining;
     }
+  }
+
+  Widget _buildAddonCard({
+    required String title,
+    required String subtitle,
+    required String priceTag,
+    required String imagePath,
+    required bool value,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1D1B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: value ? const Color(0xFFD4A24C) : const Color(0xFFD4A24C).withOpacity(0.1),
+          width: value ? 1.5 : 1.0,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => onChanged(!value),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    imagePath,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.white10,
+                        child: const Icon(Icons.broken_image, color: Colors.white30),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        priceTag,
+                        style: const TextStyle(
+                          color: Color(0xFFD4A24C),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Transform.scale(
+                  scale: 0.9,
+                  child: Checkbox(
+                    value: value,
+                    activeColor: const Color(0xFFD4A24C),
+                    checkColor: const Color(0xFF121412),
+                    side: const BorderSide(color: Colors.white30, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    onChanged: onChanged,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   bool _hasDedicatedImage(String id) {

@@ -50,7 +50,7 @@ class CartProvider with ChangeNotifier {
     String portionSize = 'Standard',
     String? notes,
   }) {
-    final itemKey = '${id}_$portionSize';
+    final itemKey = '${id}_${portionSize}_${notes ?? ""}';
     if (_items.containsKey(itemKey)) {
       _items[itemKey]!.quantity++;
     } else {

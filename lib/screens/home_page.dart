@@ -542,6 +542,13 @@ class _HomePageState extends State<HomePage> {
                                         '${item.portionSize} - RM ${item.price.toStringAsFixed(2)}',
                                         style: const TextStyle(color: Colors.white54, fontSize: 12),
                                       ),
+                                      if (item.notes != null && item.notes!.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          item.notes!,
+                                          style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 10, fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -563,6 +570,7 @@ class _HomePageState extends State<HomePage> {
                                         price: item.price,
                                         imagePath: item.imagePath,
                                         portionSize: item.portionSize,
+                                        notes: item.notes,
                                       ),
                                     ),
                                   ],

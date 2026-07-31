@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
@@ -39,7 +41,28 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   bool _isLiveCamera = false;
   bool _isCameraLoading = false;
 
+  Set<String> _availableModels = {};
+
+  Future<void> _loadAssetManifest() async {
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      setState(() {
+        _availableModels = manifestMap.keys
+            .where((path) => path.startsWith('assets/models/') && path.endsWith('.glb'))
+            .toSet();
+      });
+    } catch (e) {
+      debugPrint('Error loading asset manifest: $e');
+    }
+  }
+
   String _getModelPath(String itemId, String category) {
+    final specificPath = 'assets/models/$itemId.glb';
+    if (_availableModels.contains(specificPath)) {
+      return specificPath;
+    }
+    
     if (category.contains('Drink')) {
       return 'https://github.com/KhronosGroup/glTF-Sample-Assets/raw/main/Models/Teacup/glTF-Binary/Teacup.glb';
     } else if (itemId.contains('avocado')) {
@@ -52,6 +75,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   @override
   void initState() {
     super.initState();
+    _loadAssetManifest();
     if (widget.item['custom_options'] != null) {
       final opts = widget.item['custom_options'] as Map<String, dynamic>;
       _iceLevel = opts['ice'] ?? 0.5;
@@ -1052,6 +1076,15 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   }
 
   Widget _buildBottomActionDock(BuildContext context, CartProvider cart, bool isDrink, String category) {
+    final double basePrice = widget.item['basePrice'] ?? widget.item['price'] ?? 0.0;
+    double extraCharges = 0.0;
+    if (category == 'Roti / Flatbreads') {
+      if (_addEgg) extraCharges += 1.50;
+      if (_addCheese) extraCharges += 2.00;
+      if (_extraMilk) extraCharges += 1.00;
+    }
+    final finalPrice = basePrice + extraCharges;
+
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1118,9 +1151,9 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 cart.addItem(
                   id: widget.item['id'],
                   name: widget.item['name'],
-                  price: widget.item['price'],
+                  price: finalPrice,
                   imagePath: widget.item['imagePath'],
-                  portionSize: 'Standard',
+                  portionSize: widget.item['portionSize'] ?? 'Standard',
                   notes: note,
                 );
                 
@@ -1160,9 +1193,9 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                   children: [
                     const Icon(Icons.add_shopping_cart, color: Color(0xFF121412), size: 18),
                     const SizedBox(width: 8),
-                    const Text(
-                      'ADD TO ORDER',
-                      style: TextStyle(
+                    Text(
+                      'ADD TO ORDER (RM ${finalPrice.toStringAsFixed(2)})',
+                      style: const TextStyle(
                         color: Color(0xFF121412),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
