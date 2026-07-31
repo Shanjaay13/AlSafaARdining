@@ -429,77 +429,93 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   }
 
   Widget _buildFoodVisual(String itemId, String category) {
-    Widget baseImage = _hasDedicatedImage(itemId)
-        ? Image.asset(
-            widget.item['imagePath'],
-            width: 300,
-            height: 300,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return PremiumFoodVisual(item: widget.item, size: 300);
-            },
-          )
-        : PremiumFoodVisual(item: widget.item, size: 300);
+    final isDrink = category.contains('Drinks') || category.contains('Drink');
 
-    // Apply real-time overlays based on category/customization
+    // 1. Base food item widget (rendered as a realistic circular dining plate for foods)
+    Widget baseFoodWidget = isDrink
+        ? (_hasDedicatedImage(itemId)
+            ? Image.asset(
+                widget.item['imagePath'],
+                width: 250,
+                height: 250,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return PremiumFoodVisual(item: widget.item, size: 250);
+                },
+              )
+            : PremiumFoodVisual(item: widget.item, size: 250))
+        : Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B1D1B),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                )
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: _hasDedicatedImage(itemId)
+                  ? Image.asset(
+                      widget.item['imagePath'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return PremiumFoodVisual(item: widget.item, size: 200);
+                      },
+                    )
+                  : PremiumFoodVisual(item: widget.item, size: 200),
+            ),
+          );
+
+    // Apply real-time overlays or side-by-side chain based on category/customization
     if (category == 'Roti / Flatbreads') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          baseImage,
-          // Egg Overlay
-          if (_addEgg)
-            Positioned(
-              top: 100,
-              child: Container(
-                width: 70,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.85),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.orange.withOpacity(0.4), blurRadius: 8),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 25,
-                    height: 25,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // Cheese Overlay
-          if (_addCheese)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.75,
-                child: CustomPaint(
-                  painter: CheeseOverlayPainter(),
-                ),
-              ),
-            ),
-          // Condensed Milk Overlay
-          if (_extraMilk)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.85,
-                child: CustomPaint(
-                  painter: CondensedMilkOverlayPainter(),
-                ),
-              ),
-            ),
-        ],
+      final hasAddons = _addEgg || _addCheese || _extraMilk;
+      if (!hasAddons) {
+        return baseFoodWidget;
+      }
+
+      // Gather active addon visual items
+      List<Widget> addonWidgets = [];
+      if (_addEgg) {
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/fried_egg.png', 'Egg'));
+      }
+      if (_addCheese) {
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/melted_cheese.png', 'Cheese'));
+      }
+      if (_extraMilk) {
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/condensed_milk.png', 'Milk'));
+      }
+
+      List<Widget> rowChildren = [baseFoodWidget];
+      for (var addon in addonWidgets) {
+        rowChildren.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: _buildPremiumPlusSymbol(),
+          ),
+        );
+        rowChildren.add(addon);
+      }
+
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: rowChildren,
+        ),
       );
     } else if (category == 'Nasi Goreng / Fried Rice' || category == 'Mee / Noodles') {
       return Stack(
         alignment: Alignment.center,
         children: [
-          baseImage,
+          baseFoodWidget,
           // Chili Rings Overlay based on spiciness
           if (_spicyLevel == 'Medium') ..._buildChiliRings(3),
           if (_spicyLevel == 'Extra Hot') ...[
@@ -519,14 +535,14 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       return Stack(
         alignment: Alignment.center,
         children: [
-          baseImage,
+          baseFoodWidget,
           // Curry Flood overlay
           if (_gravyStyle == 'Normal')
             Positioned(
-              bottom: 40,
+              bottom: 20,
               child: Container(
-                width: 140,
-                height: 35,
+                width: 120,
+                height: 25,
                 decoration: BoxDecoration(
                   color: const Color(0xFFC6641A).withOpacity(0.4),
                   borderRadius: BorderRadius.circular(40),
@@ -535,10 +551,10 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             ),
           if (_gravyStyle == 'Banjir (Curry Flood)')
             Positioned(
-              bottom: 30,
+              bottom: 10,
               child: Container(
-                width: 190,
-                height: 90,
+                width: 160,
+                height: 70,
                 decoration: BoxDecoration(
                   color: const Color(0xFFC6641A).withOpacity(0.7),
                   borderRadius: BorderRadius.circular(95),
@@ -627,7 +643,75 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       );
     }
 
-    return baseImage;
+    return baseFoodWidget;
+  }
+
+  Widget _buildPremiumAddonVisual(String imagePath, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B1D1B),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFD4A24C), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4A24C).withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(45),
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.add, color: Color(0xFFD4A24C)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFFD4A24C),
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumPlusSymbol() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121412),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4A24C).withOpacity(0.1),
+            blurRadius: 4,
+          )
+        ],
+      ),
+      child: const Text(
+        '+',
+        style: TextStyle(
+          color: Color(0xFFD4A24C),
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
   }
 
   Widget _buildIceOverlay() {
