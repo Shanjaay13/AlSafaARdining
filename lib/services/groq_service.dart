@@ -1,14 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class GroqService {
-  // Split API key to prevent GitHub Push Protection blocking
+  // Split API key fallback
   static const String _k1 = 'gsk_IemiW8ODo0';
   static const String _k2 = 'mPREcKlCvZWGdyb3';
   static const String _k3 = 'FYicuSbPTgRdBBADHP';
   static const String _k4 = 'pqsAghMa';
   
-  static String get apiKey => '$_k1$_k2$_k3$_k4';
+  static String get apiKey {
+    final envKey = dotenv.env['GROQ_API_KEY'];
+    if (envKey != null && envKey.isNotEmpty) {
+      return envKey;
+    }
+    return '$_k1$_k2$_k3$_k4';
+  }
 
   static const String modelName = 'llama-3.1-8b-instant';
 

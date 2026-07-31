@@ -53,3 +53,9 @@ app.*.map.json
 /generate_docs.py
 /generate_slides.py
 
+# Secret Environment Files
+.env
+*.env
+assets/.env
+
+

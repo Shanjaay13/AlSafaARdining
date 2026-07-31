@@ -180,6 +180,34 @@ class _MachaChatPageState extends State<MachaChatPage> {
                 ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  "Bagi 1 roti telur & milo ais kurang manis",
+                  "One nasi goreng ayam extra pedas",
+                  "1 Teh tarik hot & roti kosong",
+                ].map((sample) {
+                  return InkWell(
+                    onTap: () {
+                      voiceTextController.text = sample;
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4A24C).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        '"$sample"',
+                        style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 10.5, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [

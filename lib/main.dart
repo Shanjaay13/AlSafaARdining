@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/cart_provider.dart';
-import 'screens/qr_scanner_page.dart';
+import 'screens/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    debugPrint("dotenv load note: $e");
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -41,7 +49,7 @@ class AlSafaApp extends StatelessWidget {
           bodyMedium: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
       ),
-      home: const QrScannerPage(),
+      home: const SplashScreen(),
     );
   }
 }
