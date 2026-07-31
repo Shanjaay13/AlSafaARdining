@@ -330,138 +330,153 @@ class _DetailPageState extends State<DetailPage> {
 
           // Bottom Bar Actions
           Positioned(
-            left: 20,
-            right: 20,
-            bottom: 24,
-            child: Row(
-              children: [
-                // Add to Bag Button
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      // Compile customizable order note
-                      String note = '';
-                      if (category == 'Hot Drinks' || category == 'Cold Drinks' || category == 'Specialty Drinks') {
-                        if (category == 'Hot Drinks') {
-                          note = 'Sweetness: ${( _sweetnessLevel * 100).round()}%';
-                        } else {
-                          note = 'Ice: ${( _iceLevel * 100).round()}%, Sweetness: ${( _sweetnessLevel * 100).round()}%';
+            left: 16,
+            right: 16,
+            bottom: 4,
+            child: SafeArea(
+              child: Row(
+                children: [
+                  // Add to Bag Button
+                  Expanded(
+                    flex: 6,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Compile customizable order note
+                        String note = '';
+                        if (category == 'Hot Drinks' || category == 'Cold Drinks' || category == 'Specialty Drinks') {
+                          if (category == 'Hot Drinks') {
+                            note = 'Sweetness: ${( _sweetnessLevel * 100).round()}%';
+                          } else {
+                            note = 'Ice: ${( _iceLevel * 100).round()}%, Sweetness: ${( _sweetnessLevel * 100).round()}%';
+                          }
+                        } else if (category == 'Roti / Flatbreads') {
+                          List<String> options = [];
+                          if (_addEgg) options.add('Add Egg');
+                          if (_addCheese) options.add('Add Cheese');
+                          if (_extraMilk) options.add('Extra Milk');
+                          note = options.isEmpty ? 'No extra toppings' : options.join(', ');
+                        } else if (category == 'Nasi Goreng / Fried Rice' || category == 'Mee / Noodles') {
+                          note = 'Spiciness: $_spicyLevel';
+                        } else if (category == 'Lauk / Sides') {
+                          note = 'Gravy Style: $_gravyStyle';
                         }
-                      } else if (category == 'Roti / Flatbreads') {
-                        List<String> options = [];
-                        if (_addEgg) options.add('Add Egg');
-                        if (_addCheese) options.add('Add Cheese');
-                        if (_extraMilk) options.add('Extra Milk');
-                        note = options.isEmpty ? 'No extra toppings' : options.join(', ');
-                      } else if (category == 'Nasi Goreng / Fried Rice' || category == 'Mee / Noodles') {
-                        note = 'Spiciness: $_spicyLevel';
-                      } else if (category == 'Lauk / Sides') {
-                        note = 'Gravy Style: $_gravyStyle';
-                      }
 
-                      cart.addItem(
-                        id: widget.item['id'],
-                        name: widget.item['name'],
-                        price: currentTotalPrice,
-                        imagePath: widget.item['imagePath'],
-                        portionSize: _selectedPortion,
-                        notes: note.isNotEmpty ? note : null,
-                      );
+                        cart.addItem(
+                          id: widget.item['id'],
+                          name: widget.item['name'],
+                          price: currentTotalPrice,
+                          imagePath: widget.item['imagePath'],
+                          portionSize: _selectedPortion,
+                          notes: note.isNotEmpty ? note : null,
+                        );
 
-                      _showAddedSuccessDialog(
-                        context,
-                        widget.item['name'],
-                        currentTotalPrice,
-                        _selectedPortion,
-                        note.isNotEmpty ? note : null,
-                      );
-                    },
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFD4A24C),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.shopping_bag_outlined, color: Color(0xFFD4A24C), size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'ADD TO BAG - RM ${currentTotalPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Color(0xFFD4A24C),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                        _showAddedSuccessDialog(
+                          context,
+                          widget.item['name'],
+                          currentTotalPrice,
+                          _selectedPortion,
+                          note.isNotEmpty ? note : null,
+                        );
+                      },
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121412),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFD4A24C),
+                            width: 1.5,
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.shopping_bag_outlined, color: Color(0xFFD4A24C), size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'ADD TO BAG - RM ${currentTotalPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFD4A24C),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
+                  const SizedBox(width: 10),
 
-                // View in AR Button
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ArSimulatorPage(item: {
-                            ...widget.item,
-                            'basePrice': basePrice,
-                            'portionSize': _selectedPortion,
-                            'custom_options': {
-                              'sweetness': _sweetnessLevel,
-                              'ice': _iceLevel,
-                              'egg': _addEgg,
-                              'cheese': _addCheese,
-                              'milk': _extraMilk,
-                              'spicy': _spicyLevel,
-                              'gravy': _gravyStyle,
-                            }
-                          }),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3C06B),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFF3C06B).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.view_in_ar, color: Color(0xFF121412), size: 18),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'VIEW IN AR',
-                            style: TextStyle(
-                              color: Color(0xFF121412),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                  // View in AR Button
+                  Expanded(
+                    flex: 4,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ArSimulatorPage(item: {
+                              ...widget.item,
+                              'basePrice': basePrice,
+                              'portionSize': _selectedPortion,
+                              'custom_options': {
+                                'sweetness': _sweetnessLevel,
+                                'ice': _iceLevel,
+                                'egg': _addEgg,
+                                'cheese': _addCheese,
+                                'milk': _extraMilk,
+                                'spicy': _spicyLevel,
+                                'gravy': _gravyStyle,
+                              }
+                            }),
                           ),
-                        ],
+                        );
+                      },
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3C06B),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF3C06B).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.view_in_ar, color: Color(0xFF121412), size: 16),
+                            const SizedBox(width: 6),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: const Text(
+                                'VIEW IN AR',
+                                style: TextStyle(
+                                  color: Color(0xFF121412),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           )
         ],

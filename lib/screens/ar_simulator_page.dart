@@ -344,26 +344,34 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                     child: const Icon(Icons.close, color: Colors.white),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F2A1D).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(_is3dMode ? Icons.threed_rotation : Icons.view_in_ar, color: const Color(0xFFD4A24C), size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        _is3dMode ? '${widget.item['name']} 3D' : '${widget.item['name']} AR',
-                        style: const TextStyle(
-                          color: Color(0xFFD4A24C),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F2A1D).withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_is3dMode ? Icons.threed_rotation : Icons.view_in_ar, color: const Color(0xFFD4A24C), size: 14),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _is3dMode ? '${widget.item['name']} 3D' : '${widget.item['name']} AR',
+                            style: const TextStyle(
+                              color: Color(0xFFD4A24C),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 ElevatedButton.icon(
@@ -373,18 +381,20 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(color: const Color(0xFFD4A24C).withOpacity(0.5)),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: Icon(
                     _is3dMode ? Icons.view_in_ar : Icons.auto_awesome_mosaic,
                     color: _is3dMode ? const Color(0xFF121412) : const Color(0xFFD4A24C),
-                    size: 16,
+                    size: 14,
                   ),
                   label: Text(
-                    _is3dMode ? '3D OBJECT BLEND' : '2D STUDIO',
+                    _is3dMode ? '3D BLEND' : '2D STUDIO',
                     style: TextStyle(
                       color: _is3dMode ? const Color(0xFF121412) : const Color(0xFFD4A24C),
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -405,18 +415,20 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
           // 7. Zoom Slider (for 3D models)
           if (!isDrink)
             Positioned(
-              bottom: 180,
-              left: 30,
-              right: 30,
+              bottom: 155,
+              left: 24,
+              right: 24,
               child: _buildZoomSlider(),
             ),
 
           // 8. Bottom Action Dock
           Positioned(
-            left: 20,
-            right: 20,
-            bottom: 24,
-            child: _buildBottomActionDock(context, cart, isDrink, category),
+            left: 12,
+            right: 12,
+            bottom: 4,
+            child: SafeArea(
+              child: _buildBottomActionDock(context, cart, isDrink, category),
+            ),
           ),
         ],
       ),
@@ -475,35 +487,73 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
         return baseFoodWidget;
       }
 
-      // Gather active addon visual items
+      int activeCount = (_addEgg ? 1 : 0) + (_addCheese ? 1 : 0) + (_extraMilk ? 1 : 0);
+
+      double mainPlateSize = activeCount == 1 ? 140 : (activeCount == 2 ? 110 : 90);
+      double addonPlateSize = activeCount == 1 ? 85 : (activeCount == 2 ? 70 : 60);
+      double spacing = activeCount == 1 ? 8 : (activeCount == 2 ? 6 : 4);
+
+      Widget scaledMainPlate = Container(
+        width: mainPlateSize,
+        height: mainPlateSize,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B1D1B),
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(mainPlateSize / 2),
+          child: _hasDedicatedImage(itemId)
+              ? Image.asset(
+                  widget.item['imagePath'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return PremiumFoodVisual(item: widget.item, size: mainPlateSize);
+                  },
+                )
+              : PremiumFoodVisual(item: widget.item, size: mainPlateSize),
+        ),
+      );
+
       List<Widget> addonWidgets = [];
       if (_addEgg) {
-        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/fried_egg.png', 'Egg'));
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/fried_egg.png', 'Egg', size: addonPlateSize));
       }
       if (_addCheese) {
-        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/melted_cheese.png', 'Cheese'));
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/melted_cheese.png', 'Cheese', size: addonPlateSize));
       }
       if (_extraMilk) {
-        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/condensed_milk.png', 'Milk'));
+        addonWidgets.add(_buildPremiumAddonVisual('assets/addons/condensed_milk.png', 'Milk', size: addonPlateSize));
       }
 
-      List<Widget> rowChildren = [baseFoodWidget];
+      List<Widget> rowChildren = [scaledMainPlate];
       for (var addon in addonWidgets) {
         rowChildren.add(
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: _buildPremiumPlusSymbol(),
+            padding: EdgeInsets.symmetric(horizontal: spacing),
+            child: _buildPremiumPlusSymbol(size: activeCount >= 2 ? 12 : 14),
           ),
         );
         rowChildren.add(addon);
       }
 
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: rowChildren,
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: rowChildren,
+          ),
         ),
       );
     }
@@ -511,13 +561,13 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
     return baseFoodWidget;
   }
 
-  Widget _buildPremiumAddonVisual(String imagePath, String label) {
+  Widget _buildPremiumAddonVisual(String imagePath, String label, {double size = 90}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 90,
-          height: 90,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: const Color(0xFF1B1D1B),
             shape: BoxShape.circle,
@@ -525,13 +575,13 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFD4A24C).withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               )
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(45),
+            borderRadius: BorderRadius.circular(size / 2),
             child: Image.asset(
               imagePath,
               fit: BoxFit.cover,
@@ -539,23 +589,23 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            color: Color(0xFFD4A24C),
-            fontSize: 9,
+          style: TextStyle(
+            color: const Color(0xFFD4A24C),
+            fontSize: size < 75 ? 8 : 9,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
+            letterSpacing: 0.8,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPremiumPlusSymbol() {
+  Widget _buildPremiumPlusSymbol({double size = 14}) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(size < 14 ? 5 : 7),
       decoration: BoxDecoration(
         color: const Color(0xFF121412),
         shape: BoxShape.circle,
@@ -567,11 +617,11 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
           )
         ],
       ),
-      child: const Text(
+      child: Text(
         '+',
         style: TextStyle(
-          color: Color(0xFFD4A24C),
-          fontSize: 16,
+          color: const Color(0xFFD4A24C),
+          fontSize: size,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -1044,11 +1094,12 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
     final finalPrice = basePrice + extraCharges;
 
     return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: [
           Expanded(
+            flex: 4,
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -1060,30 +1111,34 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 );
               },
               child: Container(
-                height: 52,
+                height: 48,
                 decoration: BoxDecoration(
                   color: const Color(0xFF142A22).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.2)),
                 ),
                 child: const Center(
-                  child: Text(
-                    'RECENTER',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'RECENTER',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 10),
 
           // Add to order button
           Expanded(
+            flex: 6,
             child: GestureDetector(
               onTap: () {
                 // Compile custom note
@@ -1134,7 +1189,8 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 );
               },
               child: Container(
-                height: 52,
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4A24C),
                   borderRadius: BorderRadius.circular(16),
@@ -1149,15 +1205,21 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.add_shopping_cart, color: Color(0xFF121412), size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'ADD TO ORDER (RM ${finalPrice.toStringAsFixed(2)})',
-                      style: const TextStyle(
-                        color: Color(0xFF121412),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        letterSpacing: 0.5,
+                    const Icon(Icons.add_shopping_cart, color: Color(0xFF121412), size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'ADD TO ORDER (RM ${finalPrice.toStringAsFixed(2)})',
+                          style: const TextStyle(
+                            color: Color(0xFF121412),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ],
