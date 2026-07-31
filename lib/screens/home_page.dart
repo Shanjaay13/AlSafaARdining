@@ -6,6 +6,8 @@ import '../widgets/premium_food_visual.dart';
 import 'detail_page.dart';
 import 'qr_scanner_page.dart';
 import 'order_confirmed_page.dart';
+import '../services/groq_service.dart';
+import 'macha_chat_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -87,6 +89,23 @@ class _HomePageState extends State<HomePage> {
             ],
           )
         ],
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: const Color(0xFFD4A24C),
+        icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF121412)),
+        label: const Text(
+          'AI WAITER',
+          style: TextStyle(
+            color: Color(0xFF121412),
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MachaChatPage()),
+          );
+        },
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -581,6 +600,7 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                     ),
+                    CartComboPanel(cartItems: cartItems),
                     const Divider(color: Colors.white24),
                     const SizedBox(height: 8),
                     Row(
@@ -718,5 +738,188 @@ class _HomePageState extends State<HomePage> {
 
   bool _hasDedicatedImage(String id) {
     return true;
+  }
+}
+
+class CartComboPanel extends StatefulWidget {
+  final List<CartItem> cartItems;
+
+  const CartComboPanel({Key? key, required this.cartItems}) : super(key: key);
+
+  @override
+  State<CartComboPanel> createState() => _CartComboPanelState();
+}
+
+class _CartComboPanelState extends State<CartComboPanel> {
+  bool _loading = false;
+  Map<String, dynamic>? _recommendation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCombo();
+  }
+
+  @override
+  void didUpdateWidget(covariant CartComboPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newIds = widget.cartItems.map((e) => e.id).toList()..sort();
+    final oldIds = oldWidget.cartItems.map((e) => e.id).toList()..sort();
+    
+    if (newIds.join(',') != oldIds.join(',')) {
+      _fetchCombo();
+    }
+  }
+
+  Future<void> _fetchCombo() async {
+    if (widget.cartItems.isEmpty) return;
+    
+    setState(() {
+      _loading = true;
+    });
+
+    final ids = widget.cartItems.map((e) => e.id).toList();
+    final rec = await GroqService.getSmartComboRecommendation(ids);
+    
+    if (mounted) {
+      setState(() {
+        _recommendation = rec;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.cartItems.isEmpty || _recommendation == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(color: Color(0xFFD4A24C), strokeWidth: 1.5),
+          ),
+        ),
+      );
+    }
+
+    final items = _recommendation!['items'] as List?;
+    if (items == null || items.isEmpty) return const SizedBox.shrink();
+
+    final recItem = items.first;
+    final id = recItem['id'];
+    
+    final menuMatch = MenuData.items.firstWhere(
+      (m) => m['id'] == id,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (menuMatch.isEmpty) return const SizedBox.shrink();
+
+    final cart = Provider.of<CartProvider>(context, listen: false);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F2A1D).withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.2), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFFD4A24C), size: 14),
+              const SizedBox(width: 6),
+              const Text(
+                'MACHA\'S SMART COMBO',
+                style: TextStyle(
+                  color: Color(0xFFD4A24C),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const Spacer(),
+              if (GroqService.apiKey.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4A24C).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('AI', style: TextStyle(color: Color(0xFFD4A24C), fontSize: 8, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  menuMatch['imagePath'],
+                  width: 45,
+                  height: 45,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: Colors.white10, width: 45, height: 45),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _recommendation!['reply'] ?? 'Add this to complete your meal, boss!',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${menuMatch['name']} (RM ${menuMatch['price'].toStringAsFixed(2)})',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4A24C),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                ),
+                onPressed: () {
+                  cart.addItem(
+                    id: id,
+                    name: menuMatch['name'],
+                    price: menuMatch['price'],
+                    imagePath: menuMatch['imagePath'],
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Added ${menuMatch['name']} combo to bag!'),
+                      backgroundColor: const Color(0xFF0F2A1D),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'ADD',
+                  style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
