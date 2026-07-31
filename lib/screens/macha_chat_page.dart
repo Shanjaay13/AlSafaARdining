@@ -97,9 +97,7 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
     final text = customText ?? _messageController.text.trim();
     if (text.isEmpty) return;
 
-    if (customText == null) {
-      _messageController.clear();
-    }
+    _messageController.clear();
     setState(() {
       _recognizedWords = '';
     });

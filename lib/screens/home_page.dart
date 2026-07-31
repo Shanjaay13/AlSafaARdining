@@ -288,7 +288,7 @@ class _HomePageState extends State<HomePage> {
                       child: Row(
                         children: const [
                           Text(
-                            '✨ AL SAFA RESTAURANT',
+                            'AL SAFA RESTAURANT',
                             style: TextStyle(
                               color: Color(0xFFD4A24C),
                               fontWeight: FontWeight.bold,
@@ -302,12 +302,12 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
 
-                // Main Cute Welcome Title & Subtitle
+                // Main Welcome Title & Subtitle
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'Selamat Datang! 👋\nWelcome to Al Safa ❤️',
+                      'Selamat Datang!\nWelcome to Al Safa',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -339,7 +339,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     icon: const Icon(Icons.restaurant_menu, color: Color(0xFF121412), size: 18),
                     label: const Text(
-                      'EXPLORE OUR MENU 🍽️',
+                      'EXPLORE OUR MENU',
                       style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                     ),
                     onPressed: () {},
