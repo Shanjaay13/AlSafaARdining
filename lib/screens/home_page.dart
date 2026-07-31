@@ -287,10 +287,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: Row(
                         children: const [
-                          Icon(Icons.restaurant, color: Color(0xFFD4A24C), size: 12),
-                          SizedBox(width: 4),
                           Text(
-                            'WELCOME TO AL SAFA',
+                            '✨ AL SAFA RESTAURANT',
                             style: TextStyle(
                               color: Color(0xFFD4A24C),
                               fontWeight: FontWeight.bold,
@@ -304,39 +302,29 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
 
-                // Main Motto Text
+                // Main Cute Welcome Title & Subtitle
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'SENSORY AR DINING',
+                      'Selamat Datang! 👋\nWelcome to Al Safa ❤️',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
+                        height: 1.25,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 10),
                     Text(
-                      'Where Authentic Malaysian Culinary Heritage Meets Cutting-Edge 3D & Augmented Reality Dining.',
+                      'Serving your favorite Malaysian comfort food, hot teas & crispy rotis, cooked fresh with love every single day.',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
-                        height: 1.4,
+                        height: 1.45,
                       ),
                     ),
-                  ],
-                ),
-
-                // Feature Highlights Pills
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _FeatureChip(icon: Icons.view_in_ar, label: '3D AR View'),
-                    _FeatureChip(icon: Icons.mic, label: 'AI Voice Waiter'),
-                    _FeatureChip(icon: Icons.tune, label: 'Live Customizer'),
                   ],
                 ),
 
@@ -349,9 +337,9 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    icon: const Icon(Icons.menu_book, color: Color(0xFF121412), size: 18),
+                    icon: const Icon(Icons.restaurant_menu, color: Color(0xFF121412), size: 18),
                     label: const Text(
-                      'EXPLORE MENU BELOW',
+                      'EXPLORE OUR MENU 🍽️',
                       style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
                     ),
                     onPressed: () {},
