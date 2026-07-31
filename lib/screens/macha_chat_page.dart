@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/groq_service.dart';
 import '../providers/cart_provider.dart';
 import '../models/menu_data.dart';
@@ -20,12 +23,16 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
   
   late stt.SpeechToText _speech;
   late AnimationController _pulseController;
+  final AudioRecorder _audioRecorder = AudioRecorder();
   
   bool _isLoading = false;
   bool _isListening = false;
+  bool _isRecordingWhisper = false;
+  bool _isWhisperTranscribing = false;
   bool _speechInitialized = false;
   String _recognizedWords = '';
   String _speechStatus = '';
+  String? _audioPath;
 
   @override
   void initState() {
@@ -76,9 +83,73 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
   void dispose() {
     _pulseController.dispose();
     _speech.stop();
+    _audioRecorder.dispose();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Starts crisp audio recording for Groq Whisper Large v3 AI Model
+  Future<void> _startWhisperRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final Directory tempDir = await getTemporaryDirectory();
+        _audioPath = '${tempDir.path}/macha_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        
+        await _audioRecorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc),
+          path: _audioPath!,
+        );
+
+        setState(() {
+          _isRecordingWhisper = true;
+          _isListening = true;
+          _recognizedWords = 'Listening & Recording for Groq Whisper v3...';
+        });
+      }
+    } catch (e) {
+      debugPrint('Whisper start recorder error: $e');
+    }
+  }
+
+  // Stops audio recording and sends file to Groq Whisper v3 API
+  Future<void> _stopAndTranscribeWhisper() async {
+    try {
+      setState(() {
+        _isWhisperTranscribing = true;
+        _recognizedWords = 'Transcribing with Groq Whisper v3 AI...';
+      });
+
+      final path = await _audioRecorder.stop();
+      setState(() {
+        _isRecordingWhisper = false;
+        _isListening = false;
+      });
+
+      if (path != null && path.isNotEmpty) {
+        final transcript = await GroqService.transcribeAudio(path);
+        setState(() {
+          _isWhisperTranscribing = false;
+        });
+
+        if (transcript != null && transcript.trim().isNotEmpty) {
+          final words = transcript.trim();
+          setState(() {
+            _recognizedWords = words;
+          });
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          _handleSendMessage(customText: words);
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Whisper transcription error: $e');
+      setState(() {
+        _isWhisperTranscribing = false;
+        _isRecordingWhisper = false;
+        _isListening = false;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -167,17 +238,11 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
     _scrollToBottom();
   }
 
-  // Toggle real voice recognition with fast streaming dictation
+  // Toggle real voice recognition with Groq Whisper Large v3 AI & fast streaming dictation
   Future<void> _toggleListening() async {
-    if (_isListening) {
+    if (_isListening || _isRecordingWhisper) {
       await _speech.stop();
-      setState(() {
-        _isListening = false;
-      });
-      if (_recognizedWords.trim().isNotEmpty) {
-        final textToSend = _recognizedWords.trim();
-        _handleSendMessage(customText: textToSend);
-      }
+      await _stopAndTranscribeWhisper();
     } else {
       if (!_speechInitialized) {
         await _initSpeech();
@@ -188,28 +253,23 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
         _recognizedWords = '';
       });
 
+      // 1. Start Groq Whisper v3 Audio Recording
+      await _startWhisperRecording();
+
+      // 2. Start Native Streaming Dictation for Live UI Text Feedback
       try {
         await _speech.listen(
           onResult: (result) {
             if (!mounted) return;
-            setState(() {
-              _recognizedWords = result.recognizedWords;
-              _messageController.text = result.recognizedWords;
-            });
-
-            // Auto-submit instantly if final speech result is detected
-            if (result.finalResult && result.recognizedWords.trim().isNotEmpty) {
-              final finalWords = result.recognizedWords.trim();
-              _speech.stop();
+            if (result.recognizedWords.trim().isNotEmpty && !_isWhisperTranscribing) {
               setState(() {
-                _isListening = false;
+                _recognizedWords = result.recognizedWords;
+                _messageController.text = result.recognizedWords;
               });
-              Navigator.of(context).maybePop();
-              _handleSendMessage(customText: finalWords);
             }
           },
           listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 4),
+          pauseFor: const Duration(seconds: 5),
           partialResults: true,
           cancelOnError: false,
           listenMode: stt.ListenMode.dictation,
@@ -320,6 +380,19 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
                   const SizedBox(height: 24),
 
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.graphic_eq, color: Color(0xFFD4A24C), size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'POWERED BY GROQ WHISPER LARGE V3',
+                        style: TextStyle(color: Color(0xFFD4A24C), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
@@ -330,8 +403,10 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
                           ),
                           onPressed: () {
                             _speech.stop();
+                            _audioRecorder.stop();
                             setState(() {
                               _isListening = false;
+                              _isRecordingWhisper = false;
                             });
                             Navigator.pop(context);
                           },
@@ -340,26 +415,21 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD4A24C),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _speech.stop();
-                            setState(() {
-                              _isListening = false;
-                            });
-                            if (_recognizedWords.trim().isNotEmpty) {
-                              _handleSendMessage(customText: _recognizedWords);
-                            }
-                          },
-                          child: const Text(
-                            'SEND ORDER',
-                            style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold),
+                          icon: const Icon(Icons.cloud_upload, color: Color(0xFF121412), size: 18),
+                          label: const Text(
+                            'TRANSCRIBE (WHISPER V3)',
+                            style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 11),
                           ),
+                          onPressed: () async {
+                            await _speech.stop();
+                            await _stopAndTranscribeWhisper();
+                          },
                         ),
                       ),
                     ],

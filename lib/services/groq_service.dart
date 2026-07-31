@@ -134,6 +134,31 @@ DO NOT include any explanation or markdown formatting in your response. Just ret
     return _localFallbackResponse(userMessage);
   }
 
+  /// Transcribes raw recorded audio using Groq Whisper Large v3 AI Model
+  static Future<String?> transcribeAudio(String audioFilePath) async {
+    if (apiKey.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse('https://api.groq.com/openai/v1/audio/transcriptions');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $apiKey'
+        ..fields['model'] = 'whisper-large-v3'
+        ..fields['response_format'] = 'json'
+        ..files.add(await http.MultipartFile.fromPath('file', audioFilePath));
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return decoded['text'] as String?;
+      }
+    } catch (e) {
+      // Fallback silently if Whisper request fails
+    }
+    return null;
+  }
+
   /// Evaluates current cart items and returns a matching beverage/dish recommendation using LLM.
   static Future<Map<String, dynamic>> getSmartComboRecommendation(List<String> currentItemIds) async {
     if (apiKey.isEmpty || currentItemIds.isEmpty) {
