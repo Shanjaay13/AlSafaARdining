@@ -10,6 +10,8 @@ import '../services/groq_service.dart';
 import 'macha_chat_page.dart';
 import '../widgets/shopping_bag_sheet.dart';
 
+import '../widgets/container_scroll_animation.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
@@ -18,7 +20,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final ScrollController _homeScrollController = ScrollController();
   String _selectedCategory = 'All';
+
+  @override
+  void dispose() {
+    _homeScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,15 +119,42 @@ class _HomePageState extends State<HomePage> {
         },
       ),
       body: SingleChildScrollView(
+        controller: _homeScrollController,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              // Premium Showcase Card (resembling screen copy 15.png)
-              _buildFeaturedCard(context),
-              const SizedBox(height: 24),
+              // Aceternity UI 3D ContainerScroll Animation Component
+              ContainerScroll(
+                scrollController: _homeScrollController,
+                titleComponent: Column(
+                  children: const [
+                    Text(
+                      'UNLEASH THE POWER OF',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.5,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Sensory AR Dining',
+                      style: TextStyle(
+                        color: Color(0xFFD4A24C),
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                child: _buildFeaturedCard(context),
+              ),
+              const SizedBox(height: 16),
               
               // Category Title
               const Text(
