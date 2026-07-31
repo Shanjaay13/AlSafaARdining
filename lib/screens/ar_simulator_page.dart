@@ -277,7 +277,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             top: MediaQuery.of(context).padding.top + 60,
             left: 0,
             right: 0,
-            height: MediaQuery.of(context).size.height * 0.48,
+            bottom: 135,
             child: _is3dMode
                 ? Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -829,41 +829,95 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
         child: Column(
           children: [
             if (isDrink) ...[
-              // Ice Slider (if not purely hot drink)
+              // Ice Chips (if not purely hot drink)
               if (category != 'Hot Drinks') ...[
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.ac_unit, color: Color(0xFFD4A24C), size: 18),
-                    const SizedBox(width: 12),
-                    const Text('ICE LEVEL', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                    Expanded(
-                      child: Slider(
-                        value: _iceLevel,
-                        activeColor: const Color(0xFFD4A24C),
-                        inactiveColor: Colors.white12,
-                        onChanged: (val) => setState(() => _iceLevel = val),
-                      ),
+                    Row(
+                      children: const [
+                        Icon(Icons.ac_unit, color: Color(0xFFD4A24C), size: 16),
+                        SizedBox(width: 6),
+                        Text('ICE:', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    Text('${(_iceLevel * 100).round()}%', style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 12, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        {'label': 'No Ice', 'val': 0.0},
+                        {'label': 'Less', 'val': 0.3},
+                        {'label': 'Normal', 'val': 0.5},
+                        {'label': 'Extra', 'val': 1.0},
+                      ].map((opt) {
+                        final double val = opt['val'] as double;
+                        final isSel = (_iceLevel - val).abs() < 0.1;
+                        return GestureDetector(
+                          onTap: () => setState(() => _iceLevel = val),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFD4A24C)),
+                            ),
+                            child: Text(
+                              opt['label'] as String,
+                              style: TextStyle(
+                                color: isSel ? const Color(0xFF121412) : Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
               ],
-              // Sweetness / Powder Slider
+              // Sweetness Chips
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(widget.item['id'] == 'milo_dinosaur' ? Icons.grain : Icons.local_cafe, color: const Color(0xFFD4A24C), size: 18),
-                  const SizedBox(width: 12),
-                  Text(widget.item['id'] == 'milo_dinosaur' ? 'MILO POWDER' : 'SWEETNESS', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                  Expanded(
-                    child: Slider(
-                      value: _sweetness,
-                      activeColor: const Color(0xFFD4A24C),
-                      inactiveColor: Colors.white12,
-                      onChanged: (val) => setState(() => _sweetness = val),
-                    ),
+                  Row(
+                    children: [
+                      Icon(widget.item['id'] == 'milo_dinosaur' ? Icons.grain : Icons.local_cafe, color: const Color(0xFFD4A24C), size: 16),
+                      const SizedBox(width: 6),
+                      Text(widget.item['id'] == 'milo_dinosaur' ? 'MILO:' : 'SWEET:', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  Text('${(_sweetness * 100).round()}%', style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 12, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      {'label': '0%', 'val': 0.0},
+                      {'label': '30%', 'val': 0.3},
+                      {'label': '50%', 'val': 0.5},
+                      {'label': '100%', 'val': 1.0},
+                    ].map((opt) {
+                      final double val = opt['val'] as double;
+                      final isSel = (_sweetness - val).abs() < 0.1;
+                      return GestureDetector(
+                        onTap: () => setState(() => _sweetness = val),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFD4A24C)),
+                          ),
+                          child: Text(
+                            opt['label'] as String,
+                            style: TextStyle(
+                              color: isSel ? const Color(0xFF121412) : Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ] else if (isRoti) ...[

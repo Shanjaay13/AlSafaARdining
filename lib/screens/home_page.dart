@@ -248,75 +248,148 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Direct link to Satay item
-        final satayItem = MenuData.items.firstWhere((element) => element['id'] == 'satay');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailPage(item: satayItem),
-          ),
-        );
-      },
-      child: Container(
-        height: 420,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: const Color(0xFFD4A24C).withOpacity(0.25),
-            width: 1,
-          ),
+    return Container(
+      height: 380,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF142A22),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFD4A24C).withOpacity(0.4),
+          width: 1.5,
         ),
-        child: Stack(
-          children: [
-            // Image Cover Background
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(color: Colors.black45, blurRadius: 16, offset: Offset(0, 8)),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Ambient Background Image Overlay
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Opacity(
+              opacity: 0.25,
               child: Image.asset(
-                'assets/satay.png',
+                'assets/qr_stand.png',
                 height: double.infinity,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF0F2A1D)),
               ),
             ),
-            
-            // Gradient Overlay
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.8),
-                  ],
-                ),
-              ),
-            ),
-
-            // Top Bar of the card
-            Positioned(
-              top: 16,
-              left: 16,
-              child: Row(
-                children: [
-                  const Icon(Icons.local_dining, color: Color(0xFFD4A24C), size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Al Safa Special',
-                    style: TextStyle(
-                      color: const Color(0xFFD4A24C).withOpacity(0.9),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      letterSpacing: 1,
-                    ),
-                  ),
+          ),
+          
+          // Radial Gold Glow Overlay
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.0,
+                colors: [
+                  const Color(0xFF0F2A1D).withOpacity(0.4),
+                  const Color(0xFF121412).withOpacity(0.85),
                 ],
               ),
             ),
+          ),
+
+          // Motto Content Container
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Top Tag
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4A24C).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD4A24C)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.restaurant, color: Color(0xFFD4A24C), size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'WELCOME TO AL SAFA',
+                            style: TextStyle(
+                              color: Color(0xFFD4A24C),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Main Motto Text
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'SENSORY AR DINING',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Where Authentic Malaysian Culinary Heritage Meets Cutting-Edge 3D & Augmented Reality Dining.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Feature Highlights Pills
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: const [
+                    _FeatureChip(icon: Icons.view_in_ar, label: '3D AR View'),
+                    _FeatureChip(icon: Icons.mic, label: 'AI Voice Waiter'),
+                    _FeatureChip(icon: Icons.tune, label: 'Live Customizer'),
+                  ],
+                ),
+
+                // CTA Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4A24C),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.menu_book, color: Color(0xFF121412), size: 18),
+                    label: const Text(
+                      'EXPLORE MENU BELOW',
+                      style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.8),
+                    ),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
             // Glassmorphic details like screen copy 15.png
             // Price tag floating

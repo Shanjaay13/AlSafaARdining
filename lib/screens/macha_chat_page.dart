@@ -208,8 +208,8 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
               _handleSendMessage(customText: finalWords);
             }
           },
-          listenFor: const Duration(seconds: 15),
-          pauseFor: const Duration(seconds: 2),
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 4),
           partialResults: true,
           cancelOnError: false,
           listenMode: stt.ListenMode.dictation,

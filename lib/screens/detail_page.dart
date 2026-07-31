@@ -567,37 +567,91 @@ class _DetailPageState extends State<DetailPage> {
           const SizedBox(height: 12),
           if (hasIce) ...[
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.ac_unit, color: Color(0xFFD4A24C), size: 18),
-                const SizedBox(width: 10),
-                const Text('Ice Level', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                Expanded(
-                  child: Slider(
-                    value: _iceLevel,
-                    activeColor: const Color(0xFFD4A24C),
-                    inactiveColor: Colors.white10,
-                    onChanged: (val) => setState(() => _iceLevel = val),
-                  ),
+                Row(
+                  children: const [
+                    Icon(Icons.ac_unit, color: Color(0xFFD4A24C), size: 16),
+                    SizedBox(width: 8),
+                    Text('Ice Level', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                  ],
                 ),
-                Text('${(_iceLevel * 100).round()}%', style: const TextStyle(color: Color(0xFFD4A24C), fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    {'label': 'No Ice', 'val': 0.0},
+                    {'label': 'Less', 'val': 0.3},
+                    {'label': 'Normal', 'val': 0.5},
+                    {'label': 'Extra', 'val': 1.0},
+                  ].map((opt) {
+                    final double val = opt['val'] as double;
+                    final isSel = (_iceLevel - val).abs() < 0.1;
+                    return GestureDetector(
+                      onTap: () => setState(() => _iceLevel = val),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFD4A24C)),
+                        ),
+                        child: Text(
+                          opt['label'] as String,
+                          style: TextStyle(
+                            color: isSel ? const Color(0xFF121412) : Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ],
             ),
             const SizedBox(height: 12),
           ],
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.local_cafe, color: Color(0xFFD4A24C), size: 18),
-              const SizedBox(width: 10),
-              Text(widget.item['id'] == 'milo_dinosaur' ? 'Milo Powder' : 'Sweetness', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              Expanded(
-                child: Slider(
-                  value: _sweetnessLevel,
-                  activeColor: const Color(0xFFD4A24C),
-                  inactiveColor: Colors.white10,
-                  onChanged: (val) => setState(() => _sweetnessLevel = val),
-                ),
+              Row(
+                children: [
+                  Icon(widget.item['id'] == 'milo_dinosaur' ? Icons.grain : Icons.local_cafe, color: const Color(0xFFD4A24C), size: 16),
+                  const SizedBox(width: 8),
+                  Text(widget.item['id'] == 'milo_dinosaur' ? 'Milo Powder' : 'Sweetness', style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
               ),
-              Text('${(_sweetnessLevel * 100).round()}%', style: const TextStyle(color: Color(0xFFD4A24C), fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  {'label': '0%', 'val': 0.0},
+                  {'label': '30%', 'val': 0.3},
+                  {'label': '50%', 'val': 0.5},
+                  {'label': '100%', 'val': 1.0},
+                ].map((opt) {
+                  final double val = opt['val'] as double;
+                  final isSel = (_sweetnessLevel - val).abs() < 0.1;
+                  return GestureDetector(
+                    onTap: () => setState(() => _sweetnessLevel = val),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFD4A24C)),
+                      ),
+                      child: Text(
+                        opt['label'] as String,
+                        style: TextStyle(
+                          color: isSel ? const Color(0xFF121412) : Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ],
           ),
         ],
