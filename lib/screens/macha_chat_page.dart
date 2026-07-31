@@ -112,30 +112,114 @@ class _MachaChatPageState extends State<MachaChatPage> {
     _scrollToBottom();
   }
 
-  // Option 2: Simulated voice recognition (vocal speech to text)
-  void _simulateVoiceInput() {
-    if (_isListening) return;
+  // Option 2: Interactive Speech & Dictation Input
+  void _showVoiceInputDialog() {
+    final TextEditingController voiceTextController = TextEditingController();
 
-    setState(() {
-      _isListening = true;
-    });
-
-    // Selection of realistic Mamak voice orders
-    final simulatedOrders = [
-      "Bagi saya satu roti telur dan milo ais kurang manis boss",
-      "I want to order nasi lemak biasa, one extra chicken, and teh tarik hot",
-      "Macha recommended combo set please",
-      "One maggi goreng extra pedas and sirap bandung, ikat tepi!",
-    ];
-    final selectedOrder = (simulatedOrders..shuffle()).first;
-
-    Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      setState(() {
-        _isListening = false;
-      });
-      _handleSendMessage(customText: selectedOrder);
-    });
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.only(
+            top: 24,
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF142A22),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4A24C).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mic, color: Color(0xFFD4A24C), size: 36),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'SPEAK / DICTATE TO MACHA',
+                style: TextStyle(
+                  color: Color(0xFFD4A24C),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Dictate your order naturally (e.g. "Bagi saya 2 roti telur dan 1 teh tarik")',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: voiceTextController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Speak or type your order here...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Colors.black38,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: const Color(0xFFD4A24C).withOpacity(0.4)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: const Color(0xFFD4A24C).withOpacity(0.4)),
+                  ),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white38),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('CANCEL', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4A24C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.send, color: Color(0xFF121412), size: 16),
+                      label: const Text('SEND ORDER', style: TextStyle(color: Color(0xFF121412), fontSize: 12, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        final spokenText = voiceTextController.text.trim();
+                        Navigator.pop(context);
+                        if (spokenText.isNotEmpty) {
+                          _handleSendMessage(customText: spokenText);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -291,7 +375,7 @@ class _MachaChatPageState extends State<MachaChatPage> {
               children: [
                 // Simulated voice recognition trigger
                 GestureDetector(
-                  onTap: _simulateVoiceInput,
+                  onTap: _showVoiceInputDialog,
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

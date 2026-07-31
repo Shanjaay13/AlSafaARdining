@@ -366,42 +366,37 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Mode Toggle Button (3D vs 2D)
-                    IconButton(
-                      icon: Icon(
-                        _is3dMode ? Icons.tune : Icons.threed_rotation,
-                        color: Colors.white,
-                      ),
-                      tooltip: _is3dMode ? 'Switch to 2D Customizer' : 'Switch to 3D Viewer',
-                      onPressed: () {
-                        setState(() {
-                          _is3dMode = !_is3dMode;
-                        });
-                      },
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _is3dMode ? const Color(0xFFD4A24C) : const Color(0xFF121412).withOpacity(0.8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: const Color(0xFFD4A24C).withOpacity(0.5)),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        _isLiveCamera ? Icons.videocam : Icons.videocam_off,
-                        color: _isLiveCamera ? const Color(0xFFD4A24C) : Colors.white,
-                      ),
-                      tooltip: _isLiveCamera ? 'Switch to Simulated View' : 'Switch to Live AR Camera',
-                      onPressed: _toggleCamera,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                  icon: Icon(
+                    _is3dMode ? Icons.view_in_ar : Icons.auto_awesome_mosaic,
+                    color: _is3dMode ? const Color(0xFF121412) : const Color(0xFFD4A24C),
+                    size: 16,
+                  ),
+                  label: Text(
+                    _is3dMode ? '3D OBJECT BLEND' : '2D STUDIO',
+                    style: TextStyle(
+                      color: _is3dMode ? const Color(0xFF121412) : const Color(0xFFD4A24C),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.info_outline, color: Colors.white),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pinch to scale, drag to position or rotate in AR.'),
-                            backgroundColor: Color(0xFF142A22),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _is3dMode = !_is3dMode;
+                      _isLiveCamera = _is3dMode;
+                      if (_isLiveCamera && !_isCameraInitialized) {
+                        _initCamera();
+                      }
+                    });
+                  },
                 ),
               ],
             ),
@@ -473,7 +468,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             ),
           );
 
-    // Apply real-time overlays or side-by-side chain based on category/customization
+    // Apply real-time side-by-side addon chain for Roti / Flatbreads
     if (category == 'Roti / Flatbreads') {
       final hasAddons = _addEgg || _addCheese || _extraMilk;
       if (!hasAddons) {
@@ -510,136 +505,6 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: rowChildren,
         ),
-      );
-    } else if (category == 'Nasi Goreng / Fried Rice' || category == 'Mee / Noodles') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          baseFoodWidget,
-          // Chili Rings Overlay based on spiciness
-          if (_spicyLevel == 'Medium') ..._buildChiliRings(3),
-          if (_spicyLevel == 'Extra Hot') ...[
-            ..._buildChiliRings(7),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ]
-        ],
-      );
-    } else if (category == 'Lauk / Sides') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          baseFoodWidget,
-          // Curry Flood overlay
-          if (_gravyStyle == 'Normal')
-            Positioned(
-              bottom: 20,
-              child: Container(
-                width: 120,
-                height: 25,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC6641A).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-              ),
-            ),
-          if (_gravyStyle == 'Banjir (Curry Flood)')
-            Positioned(
-              bottom: 10,
-              child: Container(
-                width: 160,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC6641A).withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(95),
-                  boxShadow: [
-                    BoxShadow(color: const Color(0xFF904000).withOpacity(0.4), blurRadius: 10),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      );
-    } else if (itemId == 'teh_tarik') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            'assets/teh_tarik.png',
-            width: 280,
-            height: 380,
-            fit: BoxFit.contain,
-          ),
-          Positioned(
-            bottom: 60,
-            child: Container(
-              width: 140,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.brown.withOpacity((1.0 - _sweetness) * 0.15),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-              ),
-            ),
-          ),
-          _buildIceOverlay(),
-        ],
-      );
-    } else if (itemId == 'milo_dinosaur') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            'assets/milo_dinosaur.png',
-            width: 280,
-            height: 340,
-            fit: BoxFit.contain,
-          ),
-          Positioned(
-            top: 60,
-            child: Opacity(
-              opacity: _sweetness.clamp(0.1, 1.0),
-              child: Container(
-                width: 100,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4E2C0E).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
-          _buildIceOverlay(),
-        ],
-      );
-    } else if (itemId == 'sirap_bandung') {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            'assets/sirap_bandung.png',
-            width: 280,
-            height: 340,
-            fit: BoxFit.contain,
-          ),
-          Positioned(
-            bottom: 50,
-            child: Container(
-              width: 130,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.pink.withOpacity(_sweetness * 0.12),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-              ),
-            ),
-          ),
-          _buildIceOverlay(),
-        ],
       );
     }
 
@@ -933,31 +798,36 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('SPICY LEVEL:', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                  Row(
-                    children: ['Mild', 'Medium', 'Extra Hot'].map((lvl) {
-                      final isSel = _spicyLevel == lvl;
-                      return GestureDetector(
-                        onTap: () => setState(() => _spicyLevel = lvl),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFD4A24C)),
-                          ),
-                          child: Text(
-                            lvl,
-                            style: TextStyle(
-                              color: isSel ? const Color(0xFF121412) : Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                  const Text('SPICY LEVEL:', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: ['Mild', 'Medium', 'Extra Hot'].map((lvl) {
+                          final isSel = _spicyLevel == lvl;
+                          return GestureDetector(
+                            onTap: () => setState(() => _spicyLevel = lvl),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFD4A24C)),
+                              ),
+                              child: Text(
+                                lvl,
+                                style: TextStyle(
+                                  color: isSel ? const Color(0xFF121412) : Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -965,31 +835,36 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('GRAVY (KUAH):', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                  Row(
-                    children: ['Dry', 'Normal', 'Banjir'].map((gvy) {
-                      final isSel = _gravyStyle == (gvy == 'Banjir' ? 'Banjir (Curry Flood)' : gvy);
-                      return GestureDetector(
-                        onTap: () => setState(() => _gravyStyle = gvy == 'Banjir' ? 'Banjir (Curry Flood)' : gvy),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFD4A24C)),
-                          ),
-                          child: Text(
-                            gvy,
-                            style: TextStyle(
-                              color: isSel ? const Color(0xFF121412) : Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                  const Text('GRAVY (KUAH):', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: ['Dry', 'Normal', 'Banjir'].map((gvy) {
+                          final isSel = _gravyStyle == (gvy == 'Banjir' ? 'Banjir (Curry Flood)' : gvy);
+                          return GestureDetector(
+                            onTap: () => setState(() => _gravyStyle = gvy == 'Banjir' ? 'Banjir (Curry Flood)' : gvy),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isSel ? const Color(0xFFD4A24C) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFD4A24C)),
+                              ),
+                              child: Text(
+                                gvy,
+                                style: TextStyle(
+                                  color: isSel ? const Color(0xFF121412) : Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 ],
               ),

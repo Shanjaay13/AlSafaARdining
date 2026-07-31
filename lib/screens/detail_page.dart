@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/premium_food_visual.dart';
 import 'ar_simulator_page.dart';
+import '../widgets/shopping_bag_sheet.dart';
 
 class DetailPage extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -126,23 +127,70 @@ class _DetailPageState extends State<DetailPage> {
                     ),
                   ],
                 ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isLiked = !_isLiked;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF121412).withOpacity(0.7),
-                      shape: BoxShape.circle,
+                Row(
+                  children: [
+                    Consumer<CartProvider>(
+                      builder: (context, cart, child) {
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () => showShoppingBagSheet(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF121412).withOpacity(0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                              ),
+                            ),
+                            if (cart.itemCount > 0)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD4A24C),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                  child: Text(
+                                    '${cart.itemCount}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF121412),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
-                    child: Icon(
-                      _isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: const Color(0xFFD4A24C),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isLiked = !_isLiked;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121412).withOpacity(0.7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: const Color(0xFFD4A24C),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -320,12 +368,12 @@ class _DetailPageState extends State<DetailPage> {
                         notes: note.isNotEmpty ? note : null,
                       );
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${widget.item['name']} added to shopping bag!'),
-                          backgroundColor: const Color(0xFF0F2A1D),
-                          duration: const Duration(seconds: 1),
-                        ),
+                      _showAddedSuccessDialog(
+                        context,
+                        widget.item['name'],
+                        currentTotalPrice,
+                        _selectedPortion,
+                        note.isNotEmpty ? note : null,
                       );
                     },
                     child: Container(
@@ -343,9 +391,9 @@ class _DetailPageState extends State<DetailPage> {
                         children: [
                           const Icon(Icons.shopping_bag_outlined, color: Color(0xFFD4A24C), size: 18),
                           const SizedBox(width: 8),
-                          const Text(
-                            'ADD TO BAG',
-                            style: TextStyle(
+                          Text(
+                            'ADD TO BAG - RM ${currentTotalPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
                               color: Color(0xFFD4A24C),
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -778,6 +826,116 @@ class _DetailPageState extends State<DetailPage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showAddedSuccessDialog(BuildContext context, String name, double price, String portion, String? note) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.75),
+      builder: (context) {
+        return Dialog(
+          backgroundColor: const Color(0xFF142A22),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: const Color(0xFFD4A24C).withOpacity(0.3), width: 1.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4A24C).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFFD4A24C),
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'ADDED TO BAG!',
+                  style: TextStyle(
+                    color: Color(0xFFD4A24C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$name ($portion)',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (note != null && note.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    note,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text(
+                  'RM ${price.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Color(0xFFD4A24C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.white38),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'CONTINUE',
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4A24C),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          showShoppingBagSheet(context);
+                        },
+                        child: const Text(
+                          'VIEW BAG',
+                          style: TextStyle(color: Color(0xFF121412), fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
