@@ -766,8 +766,8 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
 
   Widget _buildRecommendationCardList(List<dynamic> items) {
     return Container(
-      height: 120,
-      margin: const EdgeInsets.only(top: 4),
+      height: 135,
+      margin: const EdgeInsets.only(top: 6),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
@@ -782,49 +782,102 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
           if (menuMatch.isEmpty) return const SizedBox();
 
           return Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 10),
+            width: 210,
+            margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color(0xFF0F2A1D),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4)),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    menuMatch['imagePath'],
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.5), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        menuMatch['name'],
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        'RM ${(menuMatch['price'] as double).toStringAsFixed(2)}',
-                        style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                      if (item['notes'] != null && item['notes'].toString().isNotEmpty)
-                        Text(
-                          item['notes'],
-                          style: const TextStyle(color: Colors.white54, fontSize: 9.5),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        menuMatch['imagePath'],
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 48,
+                          height: 48,
+                          color: const Color(0xFF142A22),
+                          child: const Icon(Icons.restaurant, color: Color(0xFFD4A24C), size: 20),
                         ),
-                    ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            menuMatch['name'],
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'RM ${(menuMatch['price'] as double).toStringAsFixed(2)}',
+                            style: const TextStyle(color: Color(0xFFD4A24C), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          if (item['notes'] != null && item['notes'].toString().isNotEmpty)
+                            Text(
+                              item['notes'],
+                              style: const TextStyle(color: Colors.white54, fontSize: 9.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 32,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4A24C),
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.add_shopping_cart, color: Color(0xFF121412), size: 14),
+                    label: const Text(
+                      'ADD TO BAG',
+                      style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
+                    ),
+                    onPressed: () {
+                      final cart = Provider.of<CartProvider>(context, listen: false);
+                      cart.addItem(
+                        id: menuMatch['id'],
+                        name: menuMatch['name'],
+                        price: menuMatch['price'],
+                        imagePath: menuMatch['imagePath'],
+                        notes: item['notes'],
+                      );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Added ${menuMatch['name']} to your bag!'),
+                          backgroundColor: const Color(0xFFD4A24C),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
