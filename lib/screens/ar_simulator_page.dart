@@ -23,6 +23,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
   double _scale = 1.0;
   double _rotationAngle = 0.0;
   bool _showIngredients = false;
+  bool _showNutritionCard = false;
   bool _is3dMode = true;
 
   // Customization States (preloaded from detail page)
@@ -497,33 +498,48 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       double addonPlateSize = activeCount == 1 ? 85 : (activeCount == 2 ? 70 : 60);
       double spacing = activeCount == 1 ? 8 : (activeCount == 2 ? 6 : 4);
 
-      Widget scaledMainPlate = Container(
-        width: mainPlateSize,
-        height: mainPlateSize,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1B1D1B),
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.4), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(mainPlateSize / 2),
-          child: _hasDedicatedImage(itemId)
-              ? Image.asset(
-                  widget.item['imagePath'],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return PremiumFoodVisual(item: widget.item, size: mainPlateSize);
-                  },
+      Widget scaledMainPlate = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: mainPlateSize,
+            height: mainPlateSize,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B1D1B),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD4A24C), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 )
-              : PremiumFoodVisual(item: widget.item, size: mainPlateSize),
-        ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(mainPlateSize / 2),
+              child: _hasDedicatedImage(itemId)
+                  ? Image.asset(
+                      widget.item['imagePath'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return PremiumFoodVisual(item: widget.item, size: mainPlateSize);
+                      },
+                    )
+                  : PremiumFoodVisual(item: widget.item, size: mainPlateSize),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.item['name'].toString().toUpperCase(),
+            style: TextStyle(
+              color: const Color(0xFFD4A24C),
+              fontSize: activeCount >= 2 ? 8 : 9,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
       );
 
       List<Widget> addonWidgets = [];
@@ -542,14 +558,25 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
         rowChildren.add(
           Padding(
             padding: EdgeInsets.symmetric(horizontal: spacing),
-            child: _buildPremiumPlusSymbol(size: activeCount >= 2 ? 12 : 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: mainPlateSize,
+                  child: Center(
+                    child: _buildPremiumPlusSymbol(size: activeCount >= 2 ? 12 : 14),
+                  ),
+                ),
+                const SizedBox(height: 18), // Match bottom label height offset
+              ],
+            ),
           ),
         );
         rowChildren.add(addon);
       }
 
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         alignment: Alignment.center,
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -969,35 +996,78 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
       ingredientsText = '• Steamed Rice\n• Spiced Chicken\n• Okra\n• Salted Egg\n• Mixed Gravy (Banjir)';
     }
 
+    if (!_showNutritionCard) {
+      return Positioned(
+        top: MediaQuery.of(context).padding.top + 62,
+        right: 16,
+        child: GestureDetector(
+          onTap: () => setState(() => _showNutritionCard = true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F2A1D).withOpacity(0.9),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFD4A24C), width: 1),
+              boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 6)],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.analytics_outlined, color: Color(0xFFD4A24C), size: 13),
+                SizedBox(width: 5),
+                Text(
+                  'NUTRITION',
+                  style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.6),
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.keyboard_arrow_down, color: Color(0xFFD4A24C), size: 13),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Positioned(
-      top: 120,
+      top: MediaQuery.of(context).padding.top + 62,
       right: 16,
-      width: 110,
+      width: 140,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F2A1D).withOpacity(0.85),
+          color: const Color(0xFF0F2A1D).withOpacity(0.95),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFD4A24C).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFFD4A24C), width: 1.5),
+          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'NUTRITION',
-              style: TextStyle(
-                color: Color(0xFFD4A24C),
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
-                letterSpacing: 0.5,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'NUTRITION',
+                  style: TextStyle(
+                    color: Color(0xFFD4A24C),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _showNutritionCard = false),
+                  child: const Icon(Icons.close, color: Colors.white70, size: 14),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             Text(
               nutritionText,
-              style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
+              style: const TextStyle(color: Colors.white70, fontSize: 10.5, height: 1.4),
             ),
-            const Divider(color: Colors.white24, height: 16),
+            const Divider(color: Colors.white24, height: 14),
             const Text(
               'INGREDIENTS',
               style: TextStyle(
@@ -1007,7 +1077,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             GestureDetector(
               onTap: () {
                 setState(() {
@@ -1018,7 +1088,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                 children: [
                   Text(
                     _showIngredients ? 'Hide List' : 'Show List',
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
                   ),
                   Icon(
                     _showIngredients ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -1029,10 +1099,10 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
               ),
             ),
             if (_showIngredients) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 ingredientsText,
-                style: const TextStyle(color: Colors.white54, fontSize: 9, height: 1.4),
+                style: const TextStyle(color: Colors.white54, fontSize: 9, height: 1.3),
               ),
             ]
           ],
@@ -1323,19 +1393,6 @@ class ArScanOverlayPainter extends CustomPainter {
     for (double x = 0; x < size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-
-    final markerPaint = Paint()
-      ..color = const Color(0xFFD4A24C).withOpacity(0.3)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final rect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2),
-      width: size.width * 0.85,
-      height: size.width * 0.85,
-    );
-
-    canvas.drawRect(rect, markerPaint);
   }
 
   @override
