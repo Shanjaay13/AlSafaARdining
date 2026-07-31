@@ -393,7 +393,7 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                       _is3dMode = !_is3dMode;
                       _isLiveCamera = _is3dMode;
                       if (_isLiveCamera && !_isCameraInitialized) {
-                        _initCamera();
+                        _toggleCamera();
                       }
                     });
                   },
