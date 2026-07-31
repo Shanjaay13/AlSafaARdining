@@ -17,7 +17,13 @@ class GroqService {
     return '$_k1$_k2$_k3$_k4';
   }
 
-  static const String modelName = 'llama-3.1-8b-instant';
+  static const String modelName = 'llama-3.3-70b-versatile';
+  static const List<String> fallbackModels = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-70b-versatile',
+    'mixtral-8x7b-32768',
+    'llama-3.1-8b-instant',
+  ];
 
   // System instructions for the Mamak Waiter
   static const String _systemPrompt = '''
@@ -95,37 +101,37 @@ DO NOT include any explanation or markdown formatting in your response. Just ret
       return _localFallbackResponse(userMessage);
     }
 
-    try {
-      final response = await http.post(
-        Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': modelName,
-          'messages': [
-            {'role': 'system', 'content': _systemPrompt},
-            {'role': 'user', 'content': userMessage}
-          ],
-          'temperature': 0.2,
-          'max_tokens': 200,
-          'response_format': {'type': 'json_object'}
-        }),
-      ).timeout(const Duration(seconds: 5));
+    for (final targetModel in fallbackModels) {
+      try {
+        final response = await http.post(
+          Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'model': targetModel,
+            'messages': [
+              {'role': 'system', 'content': _systemPrompt},
+              {'role': 'user', 'content': userMessage}
+            ],
+            'temperature': 0.2,
+            'max_tokens': 300,
+            'response_format': {'type': 'json_object'}
+          }),
+        ).timeout(const Duration(seconds: 6));
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        final content = decoded['choices'][0]['message']['content'];
-        return jsonDecode(content);
-      } else {
-        // Fallback to local if server returns non-200
-        return _localFallbackResponse(userMessage);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          final content = decoded['choices'][0]['message']['content'];
+          return jsonDecode(content);
+        }
+      } catch (e) {
+        // Continue to fallback model if network or model fails
       }
-    } catch (e) {
-      // Fallback on network/json errors
-      return _localFallbackResponse(userMessage);
     }
+
+    return _localFallbackResponse(userMessage);
   }
 
   /// Evaluates current cart items and returns a matching beverage/dish recommendation using LLM.

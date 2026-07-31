@@ -126,35 +126,9 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              // Aceternity UI 3D ContainerScroll Animation Component
-              ContainerScroll(
-                scrollController: _homeScrollController,
-                titleComponent: Column(
-                  children: const [
-                    Text(
-                      'UNLEASH THE POWER OF',
-                      style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Sensory AR Dining',
-                      style: TextStyle(
-                        color: Color(0xFFD4A24C),
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                child: _buildFeaturedCard(context),
-              ),
-              const SizedBox(height: 16),
+              // Main Sensory AR Dining Al Safa Showcase Card
+              _buildFeaturedCard(context),
+              const SizedBox(height: 20),
               
               // Category Title
               const Text(
@@ -264,13 +238,13 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Stack(
         children: [
-          // Ambient Background Image Overlay
+          // Ambient Background Image Overlay of Al Safa Restaurant
           ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Opacity(
-              opacity: 0.25,
+              opacity: 0.45,
               child: Image.asset(
-                'assets/qr_stand.png',
+                'assets/al_safa_restaurant.png',
                 height: double.infinity,
                 width: double.infinity,
                 fit: BoxFit.cover,
