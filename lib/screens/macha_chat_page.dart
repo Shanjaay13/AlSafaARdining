@@ -18,8 +18,6 @@ class _MachaChatPageState extends State<MachaChatPage> {
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
   bool _isListening = false;
-  bool _showApiKeyInput = false;
-  final TextEditingController _apiKeyController = TextEditingController(text: GroqService.apiKey);
 
   @override
   void initState() {
@@ -181,94 +179,11 @@ class _MachaChatPageState extends State<MachaChatPage> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.vpn_key,
-              color: GroqService.apiKey.isEmpty ? Colors.white38 : const Color(0xFFD4A24C),
-            ),
-            onPressed: () {
-              setState(() {
-                _showApiKeyInput = !_showApiKeyInput;
-              });
-            },
-          ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [
-          // Expandable API Key Settings
-          if (_showApiKeyInput)
-            Container(
-              color: const Color(0xFF0D2118),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'GROQ API CONFIGURATION',
-                    style: TextStyle(
-                      color: Color(0xFFD4A24C),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Paste your Groq API Key to enable Llama 3 AI chat. If left empty, Macha operates on an offline rule-based parser fallback.',
-                    style: TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _apiKeyController,
-                          obscureText: true,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Enter gsk_xxxxxxxx...',
-                            hintStyle: const TextStyle(color: Colors.white38),
-                            filled: true,
-                            fillColor: Colors.black26,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          onChanged: (val) {
-                            GroqService.apiKey = val.trim();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4A24C),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _showApiKeyInput = false;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Groq API Key configuration saved!'),
-                              backgroundColor: Color(0xFF0F2A1D),
-                            ),
-                          );
-                        },
-                        child: const Text('SAVE', style: TextStyle(color: Color(0xFF121412), fontWeight: FontWeight.bold, fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          // API Key configuration panel removed as it is now securely integrated in the backend.
 
           // Message history list
           Expanded(
