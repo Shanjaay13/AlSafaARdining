@@ -108,10 +108,11 @@ DO NOT include any explanation or markdown formatting in your response. Just ret
             {'role': 'system', 'content': _systemPrompt},
             {'role': 'user', 'content': userMessage}
           ],
-          'temperature': 0.7,
+          'temperature': 0.2,
+          'max_tokens': 200,
           'response_format': {'type': 'json_object'}
         }),
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);

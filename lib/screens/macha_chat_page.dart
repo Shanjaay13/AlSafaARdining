@@ -167,7 +167,7 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
     _scrollToBottom();
   }
 
-  // Toggle real voice recognition
+  // Toggle real voice recognition with fast streaming dictation
   Future<void> _toggleListening() async {
     if (_isListening) {
       await _speech.stop();
@@ -175,17 +175,12 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
         _isListening = false;
       });
       if (_recognizedWords.trim().isNotEmpty) {
-        _handleSendMessage(customText: _recognizedWords);
+        final textToSend = _recognizedWords.trim();
+        _handleSendMessage(customText: textToSend);
       }
     } else {
       if (!_speechInitialized) {
         await _initSpeech();
-      }
-
-      if (!_speechInitialized) {
-        // Fallback voice dictation dialog if native speech module is uninitialized on device
-        _showVoiceInputDialog();
-        return;
       }
 
       setState(() {
@@ -193,18 +188,35 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
         _recognizedWords = '';
       });
 
-      _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _recognizedWords = result.recognizedWords;
-            _messageController.text = result.recognizedWords;
-          });
-        },
-        listenFor: const Duration(seconds: 20),
-        pauseFor: const Duration(seconds: 4),
-        cancelOnError: true,
-        partialResults: true,
-      );
+      try {
+        await _speech.listen(
+          onResult: (result) {
+            if (!mounted) return;
+            setState(() {
+              _recognizedWords = result.recognizedWords;
+              _messageController.text = result.recognizedWords;
+            });
+
+            // Auto-submit instantly if final speech result is detected
+            if (result.finalResult && result.recognizedWords.trim().isNotEmpty) {
+              final finalWords = result.recognizedWords.trim();
+              _speech.stop();
+              setState(() {
+                _isListening = false;
+              });
+              Navigator.of(context).maybePop();
+              _handleSendMessage(customText: finalWords);
+            }
+          },
+          listenFor: const Duration(seconds: 15),
+          pauseFor: const Duration(seconds: 2),
+          partialResults: true,
+          cancelOnError: false,
+          listenMode: stt.ListenMode.dictation,
+        );
+      } catch (e) {
+        debugPrint('Listen error: $e');
+      }
 
       _showLiveVoiceListeningSheet();
     }
