@@ -272,12 +272,14 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
           ),
 
           // 2. Interactive Food Model (Centered in the viewport)
-          Center(
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).size.height * 0.48,
             child: _is3dMode
                 ? Container(
-                    width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.height * 0.65,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ModelViewer(
                       src: _getModelPath(itemId, category),
                       alt: widget.item['name'],
@@ -288,26 +290,28 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
                       disableZoom: false,
                     ),
                   )
-                : GestureDetector(
-                    onScaleUpdate: (details) {
-                      setState(() {
-                        _scale = details.scale.clamp(0.6, 1.8);
-                        _rotationAngle = details.rotation;
-                      });
-                    },
-                    child: Transform.rotate(
-                      angle: _rotationAngle,
-                      child: Transform.scale(
-                        scale: _scale,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Food Image with interactive styling based on custom sliders
-                            _buildFoodVisual(itemId, category),
+                : Center(
+                    child: GestureDetector(
+                      onScaleUpdate: (details) {
+                        setState(() {
+                          _scale = details.scale.clamp(0.6, 1.8);
+                          _rotationAngle = details.rotation;
+                        });
+                      },
+                      child: Transform.rotate(
+                        angle: _rotationAngle,
+                        child: Transform.scale(
+                          scale: _scale,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Food Image with interactive styling based on custom sliders
+                              _buildFoodVisual(itemId, category),
 
-                            // Interactive Callout Pins (only for Nasi Lemak AR)
-                            if (itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') ..._buildNasiLemakCallouts(),
-                          ],
+                              // Interactive Callout Pins (only for Nasi Lemak AR)
+                              if (itemId == 'nasi_lemak_biasa' || itemId == 'nasi_lemak') ..._buildNasiLemakCallouts(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -412,12 +416,12 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
             ),
           ),
 
-          // 7. Zoom Slider (for 3D models)
-          if (!isDrink)
+          // 7. Zoom Slider (only for 3D view mode)
+          if (!isDrink && _is3dMode)
             Positioned(
-              bottom: 155,
-              left: 24,
-              right: 24,
+              bottom: 68,
+              left: 20,
+              right: 20,
               child: _buildZoomSlider(),
             ),
 
@@ -785,9 +789,9 @@ class _ArSimulatorPageState extends State<ArSimulatorPage> {
     final isLauk = category == 'Lauk / Sides';
 
     return Positioned(
-      left: 24,
-      right: 24,
-      bottom: 110,
+      left: 20,
+      right: 20,
+      bottom: 68,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
