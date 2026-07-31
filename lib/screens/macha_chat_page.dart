@@ -189,6 +189,17 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
       });
 
       try {
+        // Detect Malaysian speech recognizer locale (ms_MY or en_MY)
+        String? selectedLocale;
+        final locales = await _speech.locales();
+        for (var loc in locales) {
+          final id = loc.localeId.toLowerCase();
+          if (id.contains('ms_my') || id.contains('ms-my') || id.contains('en_my') || id.contains('en-my')) {
+            selectedLocale = loc.localeId;
+            break;
+          }
+        }
+
         await _speech.listen(
           onResult: (result) {
             if (!mounted) return;
@@ -212,6 +223,7 @@ class _MachaChatPageState extends State<MachaChatPage> with SingleTickerProvider
           partialResults: true,
           cancelOnError: false,
           listenMode: stt.ListenMode.dictation,
+          localeId: selectedLocale,
         );
       } catch (e) {
         debugPrint('Listen error: $e');

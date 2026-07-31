@@ -79,6 +79,20 @@ You have access to the following 45 menu items only:
 - milo_ais: Milo Ais (RM 3.50)
 - sirap_bandung: Sirap Bandung (RM 3.00)
 
+PHONETIC MISHEARING INSTRUCTIONS FOR SPEECH-TO-TEXT:
+The user input originates from speech recognition and may contain phonetic misspellings or English mishearings of Malaysian names. You MUST intelligently resolve them:
+- "nasilamma", "nasi lamak", "nasi lema", "nasi lepak", "nasi lama" -> nasi_lemak_biasa (Nasi Lemak)
+- "teh o ais", "teh o ice", "tay o ice", "tea o ice", "the o ais" -> teh_o_ais (Teh O Ais)
+- "teh ais", "teh ice", "tay ice", "tea ice" -> teh_ais (Teh Ais)
+- "milo ice", "milo ais", "mylo ice" -> milo_ais (Milo Ais)
+- "roti canai", "roti canay", "roti koson" -> roti_kosong_roti_canai (Roti Kosong / Roti Canai)
+- "nasi goreng pataya", "nasi goreng pattaya", "nasi goring pataya" -> nasi_goreng_ayam_pattaya
+- "maggi goring", "maggi goreng" -> maggi_goreng
+- "kopi ice", "kopi o ice", "copy o ice" -> kopi_o_ais / kopi_ais
+- "nasi kandar", "nasi kan da" -> nasi_kandar_with_side
+- "thosai", "tosai", "dosa" -> thosai
+- "sirap bandung", "syrup bandung" -> sirap_bandung
+
 If the user wants to order food, recommend items, or customise items, you MUST respond in JSON. Your output must strictly be a valid JSON object matching this schema:
 {
   "reply": "Your conversational response in Manglish here",
@@ -95,11 +109,54 @@ If the user wants to order food, recommend items, or customise items, you MUST r
 DO NOT include any explanation or markdown formatting in your response. Just return the raw JSON object.
 ''';
 
+  /// Pre-processes misheard speech terms before passing to Groq LLM
+  static String normalizeMalaysianSpeech(String rawText) {
+    String text = rawText.toLowerCase();
+    final Map<String, String> phoneticFixes = {
+      'nasilamma': 'nasi lemak',
+      'nasi lamma': 'nasi lemak',
+      'nasi lamak': 'nasi lemak',
+      'nasi lepak': 'nasi lemak',
+      'nasi lema': 'nasi lemak',
+      'nasi lama': 'nasi lemak',
+      'tay o ice': 'teh o ais',
+      'teh o ice': 'teh o ais',
+      'tea o ice': 'teh o ais',
+      'the o ais': 'teh o ais',
+      'tay o': 'teh o',
+      'tay ice': 'teh ais',
+      'teh ice': 'teh ais',
+      'tea ice': 'teh ais',
+      'milo ice': 'milo ais',
+      'mylo ice': 'milo ais',
+      'roty': 'roti',
+      'roti canay': 'roti canai',
+      'roti koson': 'roti kosong',
+      'maggy': 'maggi',
+      'mi goreng': 'mee goreng',
+      'meegoreng': 'mee goreng',
+      'nasi goring': 'nasi goreng',
+      'nasi goreing': 'nasi goreng',
+      'pataya': 'pattaya',
+      'tosai': 'thosai',
+      'thosay': 'thosai',
+      'syrup bandung': 'sirap bandung',
+    };
+
+    phoneticFixes.forEach((misheard, corrected) {
+      text = text.replaceAll(misheard, corrected);
+    });
+
+    return text;
+  }
+
   /// Sends a message to the Groq API and returns a parsed Map with the reply and actions.
   static Future<Map<String, dynamic>> sendMessage(String userMessage) async {
     if (apiKey.isEmpty) {
       return _localFallbackResponse(userMessage);
     }
+
+    final cleanedMessage = normalizeMalaysianSpeech(userMessage);
 
     for (final targetModel in fallbackModels) {
       try {
@@ -113,7 +170,7 @@ DO NOT include any explanation or markdown formatting in your response. Just ret
             'model': targetModel,
             'messages': [
               {'role': 'system', 'content': _systemPrompt},
-              {'role': 'user', 'content': userMessage}
+              {'role': 'user', 'content': cleanedMessage}
             ],
             'temperature': 0.2,
             'max_tokens': 300,
